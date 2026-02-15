@@ -4,18 +4,28 @@ Simple interactive Python CLI for common Android Debug Bridge (ADB) tasks.
 
 ## Features
 
+### Device and session
 - Detects connected Android devices with `adb devices -l`
-- Lets you choose a device when multiple are connected
+- Supports device selection and switching when multiple devices are connected
 - Shows one-screen device summary (brand/model/Android/API/ABI/battery/IP)
+- Supports reboot actions (system, recovery, bootloader)
+- Supports Wi-Fi adb connect/disconnect workflows
+
+### App and package
 - Installs APKs with `adb install -r`
 - Installs split APK sets with `adb install-multiple -r`
+- Supports package utilities (list/info/launch/uninstall/force-stop/clear data)
+
+### File transfer
 - Transfers files with guided `adb push` and `adb pull` prompts
+
+### Logging and diagnostics
+- Tails `logcat`, supports filtered tailing, and saves timestamped log snapshots
+- Collects diagnostics bundle (`logcat` + `bugreport`)
+
+### Utilities and runtime
 - Runs arbitrary `adb shell` commands
 - Includes shell command history shortcuts (`!history`, `!<index>`)
-- Tails `logcat`, supports filtered tailing, and saves timestamped log snapshots
-- Supports package utilities (list/info/launch/uninstall/force-stop/clear data)
-- Supports device actions (reboot modes, Wi-Fi adb connect/disconnect, switch target device)
-- Collects diagnostics bundle (`logcat` + `bugreport`)
 - Auto-installs project-local Android platform-tools in `./platform-tools` when `adb` is not found
 - Prints which `adb` binary is active (project-local or global `PATH`)
 - Runs startup preflight checks and retries transient adb failures
