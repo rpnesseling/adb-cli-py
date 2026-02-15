@@ -52,6 +52,8 @@ UTILITIES_MENU_LINES = [
     "4) App dev loop mode",
     "5) Plugin actions",
     "6) Multi-device broadcast",
+    "7) Interactive package search",
+    "8) Scheduled log capture",
     "0) Back",
 ]
 
@@ -59,6 +61,13 @@ ADVANCED_MENU_LINES = [
     "1) Port forward/reverse manager",
     "2) Screen capture tools",
     "3) Wireless pairing (adb pair)",
+    "4) Device snapshot and restore",
+    "5) Permission manager",
+    "6) Intent/deep-link runner",
+    "7) Process/service inspector",
+    "8) Network diagnostics pack",
+    "9) Device aliases",
+    "10) Prerequisite health check",
     "0) Back",
 ]
 

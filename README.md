@@ -9,12 +9,16 @@ Feature-rich interactive Python CLI for Android Debug Bridge (ADB) workflows acr
 - Supports device selection and switching when multiple devices are connected
 - Shows one-screen device summary (brand/model/Android/API/ABI/battery/IP)
 - Supports reboot actions (system, recovery, bootloader)
+- Device snapshot and restore helpers (packages/props/settings)
 
 ### App and package
 - Installs APKs with `adb install -r`
 - Installs split APK sets with `adb install-multiple -r`
 - APK insight mode (reads metadata when `aapt` is available and warns on potential downgrade/signature issues)
 - Supports package utilities (list/info/launch/uninstall/force-stop/clear data)
+- Permission manager for grant/revoke/list flows
+- Intent/deep-link runner for common `am` actions
+- Process/service inspector for app troubleshooting
 
 ### File transfer and capture
 - Transfers files with guided `adb push` and `adb pull` prompts
@@ -22,8 +26,10 @@ Feature-rich interactive Python CLI for Android Debug Bridge (ADB) workflows acr
 
 ### Logging and diagnostics
 - Tails `logcat`, supports filtered tailing, and saves timestamped log snapshots
+- Scheduled log capture with chunk rotation and gzip compression
 - Collects diagnostics bundle (`logcat` + `bugreport`)
 - Exports device health report in JSON and TXT
+- Network diagnostics pack export
 
 ### Automation and extensibility
 - Workflow manager for scripted action chains (create/list/run)
@@ -31,11 +37,13 @@ Feature-rich interactive Python CLI for Android Debug Bridge (ADB) workflows acr
 - App dev loop mode (install + clear data + launch + filtered logcat)
 - Multi-device broadcast actions (install APK or shell command across connected devices)
 - Plugin hooks from `plugins/*.py`
+- Interactive package search with quick actions
 
 ### Connectivity and developer tooling
 - Supports Wi-Fi adb connect/disconnect workflows
 - Wireless pairing (`adb pair`)
 - Port forward/reverse manager
+- Device alias manager
 - Runs arbitrary `adb shell` commands
 - Includes shell command history shortcuts (`!history`, `!<index>`)
 
@@ -43,8 +51,8 @@ Feature-rich interactive Python CLI for Android Debug Bridge (ADB) workflows acr
 - Interactive Settings menu with persisted local JSON config (`.adb_wizard_settings.json`)
 - Auto-installs project-local Android platform-tools in `./platform-tools` when `adb` is not found
 - Prints which `adb` binary is active (project-local or global `PATH`)
-- Runs startup preflight checks and retries transient adb failures
-- Optional runtime controls such as dry-run mode, debug logging, remembered device, and APK signature check mode
+- Runs startup preflight checks and additional prerequisite health checks
+- Optional runtime controls such as dry-run mode, debug logging, remembered device, APK signature check mode, redaction mode, transcript logging, retry count, and timeout
 
 ## Requirements
 
@@ -80,7 +88,12 @@ If the file does not exist, it is created when a setting is toggled.
   "apk_signature_check_mode": "conservative",
   "dry_run": false,
   "debug_logging": false,
-  "debug_log_file": "adb_wizard_debug.log"
+  "debug_log_file": "adb_wizard_debug.log",
+  "redact_exports": true,
+  "action_transcript_enabled": false,
+  "action_transcript_file": "adb_wizard_transcript.log",
+  "adb_retry_count": 3,
+  "command_timeout_sec": 120
 }
 ```
 
@@ -93,6 +106,11 @@ Settings:
 - `dry_run`: Print commands without executing them.
 - `debug_logging`: Write command-level debug logs to file.
 - `debug_log_file`: Debug log output path.
+- `redact_exports`: Redact likely sensitive values in exports/transcripts.
+- `action_transcript_enabled`: Write command transcript to file.
+- `action_transcript_file`: Transcript output path.
+- `adb_retry_count`: Retry count for adb commands.
+- `command_timeout_sec`: Timeout for command execution.
 
 On startup, the tool prints which `adb` is being used (path + source label: project-local or global `PATH`).
 
@@ -216,22 +234,26 @@ Settings:
 3. Toggle `dry_run`
 4. Toggle `debug_logging`
 5. Cycle `apk_signature_check_mode` (`off` -> `conservative` -> `strict`)
-6. Clear remembered device
+6. Toggle `redact_exports`
+7. Toggle `action_transcript_enabled`
+8. Set `adb_retry_count`
+9. Set `command_timeout_sec`
+10. Clear remembered device
 0. Back
 
 ADB menu:
 1. Device and session  
-   Submenu: show summary, switch device, reboot, connect/disconnect Wi-Fi (with confirmations for connect/disconnect)
+   Submenu: show summary, switch device, reboot, connect/disconnect Wi-Fi, snapshot/restore (with confirmations on state-changing actions)
 2. App and package  
-   Submenu: install APK, install split APKs, APK insight, list/info/launch package, uninstall/force-stop/clear data (with confirmations for destructive actions)
+   Submenu: install APK, install split APKs, APK insight, list/info/launch package, uninstall/force-stop/clear data, permission manager, intent/deep-link runner, process/service inspector
 3. File transfer  
    Submenu: push/pull files
 4. Logging and diagnostics  
-   Submenu: tail logcat, save snapshot, filtered tail, collect bundle (`logcat` + `bugreport`, with confirmation), health report export
+   Submenu: tail logcat, save snapshot, filtered tail, collect bundle (`logcat` + `bugreport`, with confirmation), health report export, network diagnostics pack
 5. Utilities  
-   Submenu: shell command, workflow manager, profile manager, app dev loop mode, plugin actions, multi-device broadcast
+   Submenu: shell command, workflow manager, profile manager, app dev loop mode, plugin actions, multi-device broadcast, interactive package search, scheduled log capture
 6. Advanced  
-   Submenu: port forward/reverse manager, screen capture tools, wireless pairing
+   Submenu: port forward/reverse manager, screen capture tools, wireless pairing, aliases, prerequisite health check
 0. Exit
 
 ## Example Session

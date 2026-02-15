@@ -18,6 +18,11 @@ class Settings:
     dry_run: bool = False
     debug_logging: bool = False
     debug_log_file: str = "adb_wizard_debug.log"
+    redact_exports: bool = True
+    action_transcript_enabled: bool = False
+    action_transcript_file: str = "adb_wizard_transcript.log"
+    adb_retry_count: int = 3
+    command_timeout_sec: int = 120
 
 
 def load_settings() -> Settings:
@@ -29,6 +34,16 @@ def load_settings() -> Settings:
         mode = str(raw.get("apk_signature_check_mode", "conservative")).lower()
         if mode not in ("off", "conservative", "strict"):
             mode = "conservative"
+        retry_count = int(raw.get("adb_retry_count", 3))
+        if retry_count < 1:
+            retry_count = 1
+        if retry_count > 10:
+            retry_count = 10
+        timeout_sec = int(raw.get("command_timeout_sec", 120))
+        if timeout_sec < 5:
+            timeout_sec = 5
+        if timeout_sec > 3600:
+            timeout_sec = 3600
         return Settings(
             prefer_project_local_platform_tools=bool(raw.get("prefer_project_local_platform_tools", False)),
             remember_last_device=bool(raw.get("remember_last_device", True)),
@@ -38,6 +53,11 @@ def load_settings() -> Settings:
             dry_run=bool(raw.get("dry_run", False)),
             debug_logging=bool(raw.get("debug_logging", False)),
             debug_log_file=str(raw.get("debug_log_file", "adb_wizard_debug.log")),
+            redact_exports=bool(raw.get("redact_exports", True)),
+            action_transcript_enabled=bool(raw.get("action_transcript_enabled", False)),
+            action_transcript_file=str(raw.get("action_transcript_file", "adb_wizard_transcript.log")),
+            adb_retry_count=retry_count,
+            command_timeout_sec=timeout_sec,
         )
     except (OSError, json.JSONDecodeError):
         return Settings()
@@ -53,6 +73,11 @@ def save_settings(settings: Settings) -> None:
         "dry_run": settings.dry_run,
         "debug_logging": settings.debug_logging,
         "debug_log_file": settings.debug_log_file,
+        "redact_exports": settings.redact_exports,
+        "action_transcript_enabled": settings.action_transcript_enabled,
+        "action_transcript_file": settings.action_transcript_file,
+        "adb_retry_count": settings.adb_retry_count,
+        "command_timeout_sec": settings.command_timeout_sec,
     }
     try:
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:

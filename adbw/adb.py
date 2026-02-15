@@ -1,5 +1,6 @@
 import os
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
@@ -16,15 +17,61 @@ from .errors import AdbWizardError
 RUNTIME_DRY_RUN = False
 RUNTIME_DEBUG_LOGGING = False
 RUNTIME_DEBUG_LOG_FILE = "adb_wizard_debug.log"
+RUNTIME_REDACT_EXPORTS = True
+RUNTIME_ACTION_TRANSCRIPT_ENABLED = False
+RUNTIME_ACTION_TRANSCRIPT_FILE = "adb_wizard_transcript.log"
+RUNTIME_ADB_RETRY_COUNT = 3
+RUNTIME_COMMAND_TIMEOUT_SEC = 120
 
 
 def set_runtime_options(settings: Settings) -> None:
     global RUNTIME_DRY_RUN
     global RUNTIME_DEBUG_LOGGING
     global RUNTIME_DEBUG_LOG_FILE
+    global RUNTIME_REDACT_EXPORTS
+    global RUNTIME_ACTION_TRANSCRIPT_ENABLED
+    global RUNTIME_ACTION_TRANSCRIPT_FILE
+    global RUNTIME_ADB_RETRY_COUNT
+    global RUNTIME_COMMAND_TIMEOUT_SEC
     RUNTIME_DRY_RUN = settings.dry_run
     RUNTIME_DEBUG_LOGGING = settings.debug_logging
     RUNTIME_DEBUG_LOG_FILE = settings.debug_log_file or "adb_wizard_debug.log"
+    RUNTIME_REDACT_EXPORTS = settings.redact_exports
+    RUNTIME_ACTION_TRANSCRIPT_ENABLED = settings.action_transcript_enabled
+    RUNTIME_ACTION_TRANSCRIPT_FILE = settings.action_transcript_file or "adb_wizard_transcript.log"
+    RUNTIME_ADB_RETRY_COUNT = max(1, min(10, int(settings.adb_retry_count)))
+    RUNTIME_COMMAND_TIMEOUT_SEC = max(5, min(3600, int(settings.command_timeout_sec)))
+
+
+def redact_sensitive_text(text: str) -> str:
+    if not text:
+        return text
+    out = text
+    patterns = [
+        (r"\b(?:\d[ -]*?){13,19}\b", "[REDACTED_CARD]"),
+        (r"\b[\w\.-]+@[\w\.-]+\.\w+\b", "[REDACTED_EMAIL]"),
+        (r"\b(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)\d{3,4}[-.\s]?\d{3,4}\b", "[REDACTED_PHONE]"),
+        (r"\b(?:token|apikey|api_key|secret|password)\s*[:=]\s*\S+\b", "[REDACTED_SECRET]"),
+        (r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "[REDACTED_IP]"),
+    ]
+    for pat, repl in patterns:
+        out = re.sub(pat, repl, out, flags=re.IGNORECASE)
+    return out
+
+
+def redact_if_enabled(text: str) -> str:
+    return redact_sensitive_text(text) if RUNTIME_REDACT_EXPORTS else text
+
+
+def append_transcript(entry: str) -> None:
+    if not RUNTIME_ACTION_TRANSCRIPT_ENABLED:
+        return
+    line = f"{datetime.now().isoformat(timespec='seconds')} {entry}\n"
+    try:
+        with open(RUNTIME_ACTION_TRANSCRIPT_FILE, "a", encoding="utf-8") as f:
+            f.write(redact_if_enabled(line))
+    except OSError:
+        pass
 
 
 def log_debug(message: str) -> None:
@@ -69,20 +116,27 @@ def command_failure_suggestion(stdout: str, stderr: str) -> str:
 def run(cmd: List[str], check: bool = True) -> subprocess.CompletedProcess:
     command_text = " ".join(cmd)
     is_adb_command = bool(cmd) and ("adb" in os.path.basename(cmd[0]).lower())
-    max_attempts = 3 if is_adb_command else 1
+    max_attempts = RUNTIME_ADB_RETRY_COUNT if is_adb_command else 1
     last_proc: Optional[subprocess.CompletedProcess] = None
 
     for attempt in range(1, max_attempts + 1):
         if RUNTIME_DRY_RUN:
             print(f"[DRY RUN] {command_text}")
             log_debug(f"DRY_RUN command={command_text}")
+            append_transcript(f"DRY_RUN command={command_text}")
             return subprocess.CompletedProcess(cmd, 0, "", "")
 
         log_debug(f"RUN attempt={attempt} command={command_text}")
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=RUNTIME_COMMAND_TIMEOUT_SEC)
+        except subprocess.TimeoutExpired:
+            proc = subprocess.CompletedProcess(cmd, 124, "", f"Command timed out after {RUNTIME_COMMAND_TIMEOUT_SEC}s")
         last_proc = proc
         log_debug(
             f"RESULT attempt={attempt} returncode={proc.returncode} stdout={proc.stdout.strip()} stderr={proc.stderr.strip()}"
+        )
+        append_transcript(
+            f"RUN attempt={attempt} command={command_text} rc={proc.returncode}\nSTDOUT:{proc.stdout}\nSTDERR:{proc.stderr}"
         )
 
         if proc.returncode == 0:
@@ -112,9 +166,15 @@ def run_streaming(cmd: List[str]) -> None:
     if RUNTIME_DRY_RUN:
         print(f"[DRY RUN] {command_text}")
         log_debug(f"DRY_RUN streaming command={command_text}")
+        append_transcript(f"DRY_RUN streaming command={command_text}")
         return
     log_debug(f"RUN streaming command={command_text}")
-    subprocess.run(cmd)
+    append_transcript(f"RUN streaming command={command_text}")
+    try:
+        subprocess.run(cmd, timeout=RUNTIME_COMMAND_TIMEOUT_SEC)
+    except subprocess.TimeoutExpired:
+        print(f"Streaming command timed out after {RUNTIME_COMMAND_TIMEOUT_SEC}s")
+        append_transcript(f"TIMEOUT streaming command={command_text}")
 
 
 def local_adb_path() -> str:
@@ -203,4 +263,3 @@ def adb_source_label(adb_path: str) -> str:
     if os.path.abspath(adb_path) == os.path.abspath(local_adb_path()):
         return f"project-local (./{LOCAL_PLATFORM_TOOLS_DIR})"
     return "global PATH"
-

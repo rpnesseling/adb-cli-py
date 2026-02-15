@@ -1,14 +1,17 @@
 import importlib.util
+import gzip
 import json
 import os
+import time
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-from .adb import adb_cmd, run, run_streaming
+from .adb import adb_cmd, redact_if_enabled, run, run_streaming
 from .devices import Device, list_devices
 
 WORKFLOWS_FILE = ".adb_wizard_workflows.json"
 PROFILES_FILE = ".adb_wizard_profiles.json"
+ALIASES_FILE = ".adb_wizard_aliases.json"
 PLUGINS_DIR = "plugins"
 
 
@@ -42,6 +45,14 @@ def load_profiles() -> Dict[str, Dict[str, str]]:
 
 def save_profiles(profiles: Dict[str, Dict[str, str]]) -> None:
     _write_json(PROFILES_FILE, profiles)
+
+
+def load_aliases() -> Dict[str, str]:
+    return _read_json(ALIASES_FILE, {})
+
+
+def save_aliases(aliases: Dict[str, str]) -> None:
+    _write_json(ALIASES_FILE, aliases)
 
 
 def select_profile(profiles: Dict[str, Dict[str, str]]) -> Optional[str]:
@@ -249,12 +260,294 @@ def export_health_report(adb_path: str, serial: str) -> None:
         "ip_route": run(adb_cmd(adb_path, serial, "shell", "ip", "route"), check=False).stdout,
     }
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+        json.dump(json.loads(redact_if_enabled(json.dumps(data))), f, indent=2)
         f.write("\n")
     with open(text_path, "w", encoding="utf-8") as f:
         for k, v in data.items():
-            f.write(f"## {k}\n{v}\n\n")
+            f.write(redact_if_enabled(f"## {k}\n{v}\n\n"))
     print(f"Wrote reports: {text_path}, {json_path}")
+
+
+def snapshot_device_state(adb_path: str, serial: str) -> None:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = f"device_snapshot_{serial}_{timestamp}.json"
+    data = {
+        "serial": serial,
+        "timestamp": timestamp,
+        "packages_all": run(adb_cmd(adb_path, serial, "shell", "pm", "list", "packages"), check=False).stdout,
+        "packages_user": run(adb_cmd(adb_path, serial, "shell", "pm", "list", "packages", "-3"), check=False).stdout,
+        "getprop": run(adb_cmd(adb_path, serial, "shell", "getprop"), check=False).stdout,
+        "settings_global": run(adb_cmd(adb_path, serial, "shell", "settings", "list", "global"), check=False).stdout,
+        "settings_system": run(adb_cmd(adb_path, serial, "shell", "settings", "list", "system"), check=False).stdout,
+        "settings_secure": run(adb_cmd(adb_path, serial, "shell", "settings", "list", "secure"), check=False).stdout,
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(json.loads(redact_if_enabled(json.dumps(data))), f, indent=2)
+        f.write("\n")
+    print(f"Snapshot saved: {path}")
+
+
+def _parse_settings_map(raw: str) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for line in raw.splitlines():
+        if "=" in line:
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
+def restore_device_state(adb_path: str, serial: str) -> None:
+    path = input("Snapshot JSON path: ").strip().strip('"')
+    if not path:
+        print("Snapshot path is required.")
+        return
+    if not os.path.exists(path):
+        print(f"Snapshot path does not exist: {path}")
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        print("Failed to read snapshot file.")
+        return
+    for namespace in ("global", "system", "secure"):
+        raw = str(data.get(f"settings_{namespace}", ""))
+        settings_map = _parse_settings_map(raw)
+        if not settings_map:
+            continue
+        print(f"Restore {namespace} settings from snapshot? ({len(settings_map)} entries)")
+        if input("[y/N]: ").strip().lower() not in ("y", "yes"):
+            continue
+        for key, value in settings_map.items():
+            run(adb_cmd(adb_path, serial, "shell", "settings", "put", namespace, key, value), check=False)
+    print("Restore attempt complete.")
+
+
+def app_permission_manager(adb_path: str, serial: str) -> None:
+    package = input("Package name: ").strip()
+    if not package:
+        print("Package name is required.")
+        return
+    while True:
+        print("\nPermission manager")
+        print("1) List granted permissions")
+        print("2) Grant permission")
+        print("3) Revoke permission")
+        print("0) Back")
+        choice = input("> ").strip()
+        if choice == "0":
+            return
+        if choice == "1":
+            out = run(adb_cmd(adb_path, serial, "shell", "dumpsys", "package", package), check=False).stdout
+            lines = [ln.strip() for ln in out.splitlines() if "android.permission." in ln and ("granted=true" in ln or "granted:" in ln)]
+            if not lines:
+                print("(no granted permission lines found)")
+            else:
+                print("\n".join(lines))
+            continue
+        if choice == "2":
+            perm = input("Permission (e.g. android.permission.CAMERA): ").strip()
+            if perm:
+                run(adb_cmd(adb_path, serial, "shell", "pm", "grant", package, perm), check=False)
+            continue
+        if choice == "3":
+            perm = input("Permission (e.g. android.permission.CAMERA): ").strip()
+            if perm:
+                run(adb_cmd(adb_path, serial, "shell", "pm", "revoke", package, perm), check=False)
+            continue
+        print("Unknown option.")
+
+
+def intent_deeplink_runner(adb_path: str, serial: str) -> None:
+    while True:
+        print("\nIntent and deep-link runner")
+        print("1) Open URL deep link")
+        print("2) Start explicit component")
+        print("3) Send broadcast")
+        print("4) Raw am command")
+        print("0) Back")
+        choice = input("> ").strip()
+        if choice == "0":
+            return
+        if choice == "1":
+            url = input("URL: ").strip()
+            if url:
+                run(adb_cmd(adb_path, serial, "shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", url), check=False)
+            continue
+        if choice == "2":
+            component = input("Component (package/.Activity): ").strip()
+            if component:
+                run(adb_cmd(adb_path, serial, "shell", "am", "start", "-n", component), check=False)
+            continue
+        if choice == "3":
+            action = input("Broadcast action: ").strip()
+            if action:
+                run(adb_cmd(adb_path, serial, "shell", "am", "broadcast", "-a", action), check=False)
+            continue
+        if choice == "4":
+            raw = input("am args (without 'am'): ").strip()
+            if raw:
+                run(adb_cmd(adb_path, serial, "shell", "am", *raw.split()), check=False)
+            continue
+        print("Unknown option.")
+
+
+def process_service_inspector(adb_path: str, serial: str) -> None:
+    package = input("Package filter (optional): ").strip()
+    if package:
+        ps = run(adb_cmd(adb_path, serial, "shell", "ps", "-A"), check=False).stdout
+        matched = [ln for ln in ps.splitlines() if package in ln]
+        print("\n".join(matched) if matched else "(no matching processes)")
+        pidof = run(adb_cmd(adb_path, serial, "shell", "pidof", package), check=False).stdout.strip()
+        if pidof:
+            print(f"pidof: {pidof}")
+        services = run(adb_cmd(adb_path, serial, "shell", "dumpsys", "activity", "services", package), check=False).stdout
+        print(services[:4000] if services else "(no services output)")
+        return
+    out = run(adb_cmd(adb_path, serial, "shell", "ps", "-A"), check=False).stdout
+    print(out)
+
+
+def network_diagnostics_pack(adb_path: str, serial: str) -> None:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = f"network_diag_{serial}_{timestamp}.txt"
+    props = run(adb_cmd(adb_path, serial, "shell", "getprop"), check=False).stdout
+    dns_lines = "\n".join(ln for ln in props.splitlines() if "dns" in ln.lower())
+    sections = {
+        "ip_addr": run(adb_cmd(adb_path, serial, "shell", "ip", "addr"), check=False).stdout,
+        "ip_route": run(adb_cmd(adb_path, serial, "shell", "ip", "route"), check=False).stdout,
+        "dns_props": dns_lines,
+        "ping_google": run(adb_cmd(adb_path, serial, "shell", "ping", "-c", "2", "8.8.8.8"), check=False).stdout,
+        "connectivity": run(adb_cmd(adb_path, serial, "shell", "dumpsys", "connectivity"), check=False).stdout,
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        for key, value in sections.items():
+            f.write(redact_if_enabled(f"## {key}\n{value}\n\n"))
+    print(f"Saved network diagnostics: {path}")
+
+
+def interactive_package_search(adb_path: str, serial: str) -> None:
+    raw = run(adb_cmd(adb_path, serial, "shell", "pm", "list", "packages"), check=False).stdout
+    packages = [ln.replace("package:", "").strip() for ln in raw.splitlines() if ln.strip()]
+    if not packages:
+        print("No packages found.")
+        return
+    query = input("Search substring: ").strip().lower()
+    matched = [p for p in packages if query in p.lower()] if query else packages[:]
+    if not matched:
+        print("No matches.")
+        return
+    for i, p in enumerate(matched[:100], start=1):
+        print(f"{i}) {p}")
+    choice = input("Pick package number: ").strip()
+    if not choice.isdigit() or not (1 <= int(choice) <= len(matched[:100])):
+        print("Invalid choice.")
+        return
+    package = matched[int(choice) - 1]
+    print(f"Selected: {package}")
+    print("1) Launch")
+    print("2) Force-stop")
+    print("3) Show package info")
+    action = input("> ").strip()
+    if action == "1":
+        run(adb_cmd(adb_path, serial, "shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"), check=False)
+    elif action == "2":
+        run(adb_cmd(adb_path, serial, "shell", "am", "force-stop", package), check=False)
+    elif action == "3":
+        out = run(adb_cmd(adb_path, serial, "shell", "dumpsys", "package", package), check=False).stdout
+        print(out[:4000] if out else "(no output)")
+    else:
+        print("Unknown option.")
+
+
+def manage_device_aliases(adb_path: str) -> None:
+    aliases = load_aliases()
+    while True:
+        print("\nDevice aliases")
+        print("1) List aliases")
+        print("2) Set alias")
+        print("3) Remove alias")
+        print("4) Resolve alias to serial")
+        print("0) Back")
+        choice = input("> ").strip()
+        if choice == "0":
+            return
+        if choice == "1":
+            if not aliases:
+                print("(no aliases)")
+            else:
+                for alias, serial in sorted(aliases.items()):
+                    print(f"{alias} -> {serial}")
+            continue
+        if choice == "2":
+            alias = input("Alias: ").strip()
+            serial = input("Serial: ").strip()
+            if alias and serial:
+                aliases[alias] = serial
+                save_aliases(aliases)
+                print("Alias saved.")
+            continue
+        if choice == "3":
+            alias = input("Alias to remove: ").strip()
+            if alias in aliases:
+                aliases.pop(alias, None)
+                save_aliases(aliases)
+                print("Alias removed.")
+            else:
+                print("Alias not found.")
+            continue
+        if choice == "4":
+            alias = input("Alias: ").strip()
+            serial = aliases.get(alias, "")
+            if serial:
+                print(f"{alias} -> {serial}")
+            else:
+                print("Alias not found.")
+            continue
+        print("Unknown option.")
+
+
+def scheduled_log_capture(adb_path: str, serial: str) -> None:
+    minutes_raw = input("Duration minutes (default 5): ").strip() or "5"
+    interval_raw = input("Chunk interval seconds (default 30): ").strip() or "30"
+    try:
+        total_seconds = max(30, int(minutes_raw) * 60)
+    except ValueError:
+        total_seconds = 300
+    try:
+        interval = max(5, int(interval_raw))
+    except ValueError:
+        interval = 30
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir = f"scheduled_logs_{serial}_{timestamp}"
+    os.makedirs(out_dir, exist_ok=True)
+    end_at = datetime.now().timestamp() + total_seconds
+    chunk = 1
+    while datetime.now().timestamp() < end_at:
+        chunk_path = os.path.join(out_dir, f"logcat_chunk_{chunk:03d}.txt")
+        raw = run(adb_cmd(adb_path, serial, "logcat", "-d"), check=False).stdout
+        with open(chunk_path, "w", encoding="utf-8") as f:
+            f.write(redact_if_enabled(raw))
+        with open(chunk_path, "rb") as src, gzip.open(f"{chunk_path}.gz", "wb") as dst:
+            dst.write(src.read())
+        os.remove(chunk_path)
+        run(adb_cmd(adb_path, serial, "logcat", "-c"), check=False)
+        chunk += 1
+        if datetime.now().timestamp() < end_at:
+            time.sleep(interval)
+    print(f"Scheduled logs saved in: {out_dir}")
+
+
+def prerequisite_health_check(adb_path: str) -> None:
+    print("Prerequisite health check")
+    print(f"- Current working directory: {os.getcwd()}")
+    print(f"- Writable cwd: {'yes' if os.access(os.getcwd(), os.W_OK) else 'no'}")
+    print(f"- ADB executable: {adb_path}")
+    print(f"- ADB responds: {'yes' if run([adb_path, 'version'], check=False).returncode == 0 else 'no'}")
+    for filename in (WORKFLOWS_FILE, PROFILES_FILE, ALIASES_FILE):
+        can_write = os.access(os.getcwd(), os.W_OK)
+        print(f"- File create possible for {filename}: {'yes' if can_write else 'no'}")
+
 
 
 def manage_port_forwarding(adb_path: str, serial: str) -> None:

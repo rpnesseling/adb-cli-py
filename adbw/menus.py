@@ -13,19 +13,29 @@ from .actions import (
     tail_filtered_logcat,
 )
 from .advanced import (
+    app_permission_manager,
     apk_insight,
     build_workflow,
     create_or_update_profile,
     delete_profile,
+    intent_deeplink_runner,
+    interactive_package_search,
     export_health_report,
     list_workflows,
     manage_port_forwarding,
+    manage_device_aliases,
     multi_device_broadcast,
+    network_diagnostics_pack,
+    prerequisite_health_check,
+    process_service_inspector,
+    restore_device_state,
     run_dev_loop,
     run_plugins,
     run_workflow,
+    scheduled_log_capture,
     screen_capture_tools,
     select_profile,
+    snapshot_device_state,
     view_profiles,
     wireless_pairing,
     load_profiles,
@@ -383,6 +393,12 @@ def _show_utilities_menu(adb_path: str, device: Device, shell_history: List[str]
         if choice == "6":
             multi_device_broadcast(adb_path)
             continue
+        if choice == "7":
+            interactive_package_search(adb_path, device.serial)
+            continue
+        if choice == "8":
+            scheduled_log_capture(adb_path, device.serial)
+            continue
         print("Unknown option.")
 
 
@@ -403,6 +419,35 @@ def _show_advanced_menu(adb_path: str, device: Device) -> None:
             continue
         if choice == "3":
             wireless_pairing(adb_path)
+            continue
+        if choice == "4":
+            print("1) Create snapshot")
+            print("2) Restore snapshot")
+            action = input("> ").strip()
+            if action == "1":
+                snapshot_device_state(adb_path, device.serial)
+            elif action == "2":
+                restore_device_state(adb_path, device.serial)
+            else:
+                print("Unknown option.")
+            continue
+        if choice == "5":
+            app_permission_manager(adb_path, device.serial)
+            continue
+        if choice == "6":
+            intent_deeplink_runner(adb_path, device.serial)
+            continue
+        if choice == "7":
+            process_service_inspector(adb_path, device.serial)
+            continue
+        if choice == "8":
+            network_diagnostics_pack(adb_path, device.serial)
+            continue
+        if choice == "9":
+            manage_device_aliases(adb_path)
+            continue
+        if choice == "10":
+            prerequisite_health_check(adb_path)
             continue
         print("Unknown option.")
 
@@ -461,13 +506,19 @@ def show_settings_menu(settings: Settings) -> bool:
         remember = "ON" if settings.remember_last_device else "OFF"
         dry_run = "ON" if settings.dry_run else "OFF"
         debug_log = "ON" if settings.debug_logging else "OFF"
+        redact = "ON" if settings.redact_exports else "OFF"
+        transcript = "ON" if settings.action_transcript_enabled else "OFF"
         signature_mode = settings.apk_signature_check_mode
         print(f"1) Prefer project-local platform-tools (currently: {local_pref})")
         print(f"2) Remember last selected device (currently: {remember})")
         print(f"3) Dry run mode (currently: {dry_run})")
         print(f"4) Debug logging to file (currently: {debug_log})")
         print(f"5) APK signature check mode (currently: {signature_mode})")
-        print(f"6) Clear remembered device (currently: {settings.last_device_serial or 'none'})")
+        print(f"6) Redact exports/transcripts (currently: {redact})")
+        print(f"7) Action transcript logging (currently: {transcript})")
+        print(f"8) ADB retry count (currently: {settings.adb_retry_count})")
+        print(f"9) Command timeout seconds (currently: {settings.command_timeout_sec})")
+        print(f"10) Clear remembered device (currently: {settings.last_device_serial or 'none'})")
         print("0) Back")
         choice = input("> ").strip()
 
@@ -508,6 +559,36 @@ def show_settings_menu(settings: Settings) -> bool:
             print(f"Saved {SETTINGS_FILE}: apk_signature_check_mode={next_mode}")
             return True
         if choice == "6":
+            settings.redact_exports = not settings.redact_exports
+            save_settings(settings)
+            state = "ON" if settings.redact_exports else "OFF"
+            print(f"Saved {SETTINGS_FILE}: redact_exports={state}")
+            return True
+        if choice == "7":
+            settings.action_transcript_enabled = not settings.action_transcript_enabled
+            save_settings(settings)
+            state = "ON" if settings.action_transcript_enabled else "OFF"
+            print(f"Saved {SETTINGS_FILE}: action_transcript_enabled={state}")
+            return True
+        if choice == "8":
+            val = input("ADB retry count (1-10): ").strip()
+            if val.isdigit() and 1 <= int(val) <= 10:
+                settings.adb_retry_count = int(val)
+                save_settings(settings)
+                print(f"Saved {SETTINGS_FILE}: adb_retry_count={settings.adb_retry_count}")
+                return True
+            print("Invalid retry count.")
+            continue
+        if choice == "9":
+            val = input("Command timeout seconds (5-3600): ").strip()
+            if val.isdigit() and 5 <= int(val) <= 3600:
+                settings.command_timeout_sec = int(val)
+                save_settings(settings)
+                print(f"Saved {SETTINGS_FILE}: command_timeout_sec={settings.command_timeout_sec}")
+                return True
+            print("Invalid timeout value.")
+            continue
+        if choice == "10":
             settings.last_device_serial = ""
             save_settings(settings)
             print(f"Saved {SETTINGS_FILE}: last_device_serial cleared.")

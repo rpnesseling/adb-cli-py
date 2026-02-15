@@ -6,5 +6,10 @@
   "apk_signature_check_mode": "conservative",
   "dry_run": false,
   "debug_logging": false,
-  "debug_log_file": "adb_wizard_debug.log"
+  "debug_log_file": "adb_wizard_debug.log",
+  "redact_exports": true,
+  "action_transcript_enabled": false,
+  "action_transcript_file": "adb_wizard_transcript.log",
+  "adb_retry_count": 3,
+  "command_timeout_sec": 120
 }

@@ -19,6 +19,8 @@ Thumbs.db
 .adb_wizard_settings.json
 .adb_wizard_profiles.json
 .adb_wizard_workflows.json
+.adb_wizard_aliases.json
+adb_wizard_transcript.log
 
 # Downloaded Android platform-tools (project-local, not source)
 platform-tools/
