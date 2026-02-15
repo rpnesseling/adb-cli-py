@@ -1,2 +1,2 @@
-"""adb-wizard package."""
+"""adb-cli-py package."""
 

@@ -9,9 +9,9 @@ from typing import Any, Callable, Dict, List, Optional
 from .adb import adb_cmd, redact_if_enabled, run, run_streaming
 from .devices import Device, list_devices
 
-WORKFLOWS_FILE = ".adb_wizard_workflows.json"
-PROFILES_FILE = ".adb_wizard_profiles.json"
-ALIASES_FILE = ".adb_wizard_aliases.json"
+WORKFLOWS_FILE = ".adb_cli_py_workflows.json"
+PROFILES_FILE = ".adb_cli_py_profiles.json"
+ALIASES_FILE = ".adb_cli_py_aliases.json"
 PLUGINS_DIR = "plugins"
 
 

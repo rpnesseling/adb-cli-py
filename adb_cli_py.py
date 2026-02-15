@@ -8,7 +8,7 @@ from adbw.errors import AdbWizardError
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="adb-wizard")
+    parser = argparse.ArgumentParser(description="adb-cli-py")
     parser.add_argument("--json", action="store_true", help="Run in non-interactive JSON/API mode.")
     parser.add_argument("--cmd", help="Command id for JSON/API mode.")
     parser.add_argument("--serial", help="Target device serial for JSON/API mode.")

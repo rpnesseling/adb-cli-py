@@ -11,8 +11,8 @@ Write-Host "Installing build dependencies..."
 Write-Host "Running tests..."
 & $Python -m unittest discover -s tests -p "test_*.py"
 
-Write-Host "Building adb-wizard binary..."
-& $Python -m PyInstaller --clean --noconfirm --onefile --name adb-wizard adb_wizard.py
+Write-Host "Building adb-cli-py binary..."
+& $Python -m PyInstaller --clean --noconfirm --onefile --name adb-cli-py adb_cli_py.py
 
-Write-Host "Done. Output: dist/adb-wizard.exe"
+Write-Host "Done. Output: dist/adb-cli-py.exe"
 

@@ -158,7 +158,7 @@ def run_json_command(cmd: str, serial: Optional[str], params_raw: Optional[str])
 
     if cmd == "system.info":
         result["data"] = {
-            "settings_file_present": os.path.exists(".adb_wizard_settings.json"),
+            "settings_file_present": os.path.exists(".adb_cli_py_settings.json"),
             "cwd": os.getcwd(),
             "adb_path": adb_path,
             "adb_source": adb_source_label(adb_path),

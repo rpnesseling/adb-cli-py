@@ -16,14 +16,14 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact_name: adb-wizard-windows
-            binary_path: dist/adb-wizard.exe
+            artifact_name: adb-cli-py-windows
+            binary_path: dist/adb-cli-py.exe
           - os: ubuntu-latest
-            artifact_name: adb-wizard-linux
-            binary_path: dist/adb-wizard
+            artifact_name: adb-cli-py-linux
+            binary_path: dist/adb-cli-py
           - os: macos-latest
-            artifact_name: adb-wizard-macos
-            binary_path: dist/adb-wizard
+            artifact_name: adb-cli-py-macos
+            binary_path: dist/adb-cli-py
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -46,7 +46,7 @@ jobs:
 
       - name: Build binary
         run: |
-          pyinstaller --clean --noconfirm --onefile --name adb-wizard adb_wizard.py
+          pyinstaller --clean --noconfirm --onefile --name adb-cli-py adb_cli_py.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -70,9 +70,9 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          cp artifacts/adb-wizard-windows/adb-wizard.exe release-assets/adb-wizard-windows.exe
-          cp artifacts/adb-wizard-linux/adb-wizard release-assets/adb-wizard-linux
-          cp artifacts/adb-wizard-macos/adb-wizard release-assets/adb-wizard-macos
+          cp artifacts/adb-cli-py-windows/adb-cli-py.exe release-assets/adb-cli-py-windows.exe
+          cp artifacts/adb-cli-py-linux/adb-cli-py release-assets/adb-cli-py-linux
+          cp artifacts/adb-cli-py-macos/adb-cli-py release-assets/adb-cli-py-macos
           cd release-assets
           sha256sum * > SHA256SUMS.txt
 

@@ -456,7 +456,7 @@ def show_basic_menu(adb_path: str, device: Device, settings: Settings) -> Device
     shell_history: List[str] = []
 
     while True:
-        print("\nADB Wizard")
+        print("\nADB CLI Py")
         print(f"Device: {device.serial} [{device.state}]")
         _print_menu(ADB_MENU_LINES)
         choice = input("> ").strip()

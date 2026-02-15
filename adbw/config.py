@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from .errors import AdbWizardError
 
-SETTINGS_FILE = ".adb_wizard_settings.json"
+SETTINGS_FILE = ".adb_cli_py_settings.json"
 LOCAL_PLATFORM_TOOLS_DIR = "platform-tools"
 
 
@@ -17,10 +17,10 @@ class Settings:
     apk_signature_check_mode: str = "conservative"
     dry_run: bool = False
     debug_logging: bool = False
-    debug_log_file: str = "adb_wizard_debug.log"
+    debug_log_file: str = "adb_cli_py_debug.log"
     redact_exports: bool = True
     action_transcript_enabled: bool = False
-    action_transcript_file: str = "adb_wizard_transcript.log"
+    action_transcript_file: str = "adb_cli_py_transcript.log"
     adb_retry_count: int = 3
     command_timeout_sec: int = 120
 
@@ -52,10 +52,10 @@ def load_settings() -> Settings:
             apk_signature_check_mode=mode,
             dry_run=bool(raw.get("dry_run", False)),
             debug_logging=bool(raw.get("debug_logging", False)),
-            debug_log_file=str(raw.get("debug_log_file", "adb_wizard_debug.log")),
+            debug_log_file=str(raw.get("debug_log_file", "adb_cli_py_debug.log")),
             redact_exports=bool(raw.get("redact_exports", True)),
             action_transcript_enabled=bool(raw.get("action_transcript_enabled", False)),
-            action_transcript_file=str(raw.get("action_transcript_file", "adb_wizard_transcript.log")),
+            action_transcript_file=str(raw.get("action_transcript_file", "adb_cli_py_transcript.log")),
             adb_retry_count=retry_count,
             command_timeout_sec=timeout_sec,
         )

@@ -1,8 +1,8 @@
-# adb-wizard
+# adb-cli-py
 
 A practical interactive CLI for everyday Android Debug Bridge (ADB) work.
 
-`adb-wizard` helps you connect to devices, run common ADB actions quickly, and automate repeated tasks with workflows, profiles, and plugins.
+`adb-cli-py` helps you connect to devices, run common ADB actions quickly, and automate repeated tasks with workflows, profiles, and plugins.
 
 ## What It Does
 
@@ -62,7 +62,7 @@ A practical interactive CLI for everyday Android Debug Bridge (ADB) work.
 ## Install and Run
 
 ```powershell
-python adb_wizard.py
+python adb_cli_py.py
 ```
 
 If `adb` is missing, the tool downloads Android platform-tools into `./platform-tools` for project-local use (not system-wide install).
@@ -87,12 +87,12 @@ If `adb` is missing, the tool downloads Android platform-tools into `./platform-
 ## Settings
 
 Runtime settings are stored in:
-- `.adb_wizard_settings.json`
+- `.adb_cli_py_settings.json`
 
 If the file does not exist, it is created when settings are saved.
 
 Example template:
-- `.adb_wizard_settings.example.json`
+- `.adb_cli_py_settings.example.json`
 
 Important options:
 - `prefer_project_local_platform_tools`: prefer `./platform-tools/adb` over global `adb`
@@ -108,23 +108,23 @@ Important options:
 ## Local Data Files
 
 These are user-local runtime files and are ignored by git:
-- `.adb_wizard_settings.json`
-- `.adb_wizard_profiles.json`
-- `.adb_wizard_workflows.json`
-- `.adb_wizard_aliases.json`
+- `.adb_cli_py_settings.json`
+- `.adb_cli_py_profiles.json`
+- `.adb_cli_py_workflows.json`
+- `.adb_cli_py_aliases.json`
 
 Example templates in repo:
-- `.adb_wizard_settings.example.json`
-- `.adb_wizard_profiles.example.json`
-- `.adb_wizard_workflows.example.json`
-- `.adb_wizard_aliases.example.json`
+- `.adb_cli_py_settings.example.json`
+- `.adb_cli_py_profiles.example.json`
+- `.adb_cli_py_workflows.example.json`
+- `.adb_cli_py_aliases.example.json`
 
 ## JSON/API Mode (Non-Interactive)
 
 Use `--json` with `--cmd` for scripting/CI.
 
 ```powershell
-python adb_wizard.py --json --cmd devices.list
+python adb_cli_py.py --json --cmd devices.list
 ```
 
 Optional:
@@ -146,16 +146,16 @@ Supported commands:
 Examples:
 
 ```powershell
-python adb_wizard.py --json --cmd device.summary --serial ABC123
-python adb_wizard.py --json --cmd shell.run --serial ABC123 --params "command=getprop ro.build.version.release"
-python adb_wizard.py --json --cmd file.push --serial ABC123 --params "src=C:/tmp/a.txt,dst=/sdcard/a.txt"
+python adb_cli_py.py --json --cmd device.summary --serial ABC123
+python adb_cli_py.py --json --cmd shell.run --serial ABC123 --params "command=getprop ro.build.version.release"
+python adb_cli_py.py --json --cmd file.push --serial ABC123 --params "src=C:/tmp/a.txt,dst=/sdcard/a.txt"
 ```
 
 ## Workflows and Profiles
 
 ### Workflows
-- File: `.adb_wizard_workflows.json`
-- Example: `.adb_wizard_workflows.example.json`
+- File: `.adb_cli_py_workflows.json`
+- Example: `.adb_cli_py_workflows.example.json`
 - Supported step actions:
   - `install_apk`
   - `clear_data`
@@ -163,8 +163,8 @@ python adb_wizard.py --json --cmd file.push --serial ABC123 --params "src=C:/tmp
   - `tail_filtered_logcat`
 
 ### Profiles
-- File: `.adb_wizard_profiles.json`
-- Example: `.adb_wizard_profiles.example.json`
+- File: `.adb_cli_py_profiles.json`
+- Example: `.adb_cli_py_profiles.example.json`
 - Fields:
   - `package_name`
   - `activity`
@@ -202,8 +202,8 @@ Linux/macOS:
 ```
 
 Output:
-- Windows: `dist/adb-wizard.exe`
-- Linux/macOS: `dist/adb-wizard`
+- Windows: `dist/adb-cli-py.exe`
+- Linux/macOS: `dist/adb-cli-py`
 
 ### GitHub Actions
 
@@ -215,14 +215,14 @@ Workflow file: `.github/workflows/build.yml`
 ## Release Assets
 
 GitHub Releases include:
-- `adb-wizard-windows.exe`
-- `adb-wizard-linux`
-- `adb-wizard-macos`
+- `adb-cli-py-windows.exe`
+- `adb-cli-py-linux`
+- `adb-cli-py-macos`
 - `SHA256SUMS.txt`
 
 ## Project Layout
 
-- `adb_wizard.py`: CLI entrypoint
+- `adb_cli_py.py`: CLI entrypoint
 - `adbw/app.py`: app startup and root flow
 - `adbw/menus.py`: interactive menus
 - `adbw/adb.py`: command execution, retries, adb discovery/install
@@ -245,9 +245,9 @@ python -m unittest discover -s tests -p "test_*.py"
 - `Device is unauthorized`
   - Unlock device and accept USB debugging prompt
 - `adb not found`
-  - Let adb-wizard auto-install project-local `platform-tools`, or install adb globally
+  - Let adb-cli-py auto-install project-local `platform-tools`, or install adb globally
 - Command errors
-  - Enable debug logging in Settings and inspect `adb_wizard_debug.log`
+  - Enable debug logging in Settings and inspect `adb_cli_py_debug.log`
 
 ## License
 

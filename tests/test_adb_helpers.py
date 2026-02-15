@@ -24,7 +24,7 @@ class TestSettingsRoundTrip(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             old_settings_file = config.SETTINGS_FILE
             try:
-                config.SETTINGS_FILE = os.path.join(tmpdir, ".adb_wizard_settings.json")
+                config.SETTINGS_FILE = os.path.join(tmpdir, ".adb_cli_py_settings.json")
                 expected = Settings(
                     prefer_project_local_platform_tools=True,
                     remember_last_device=False,
@@ -45,7 +45,7 @@ class TestSettingsRoundTrip(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             old_settings_file = config.SETTINGS_FILE
             try:
-                config.SETTINGS_FILE = os.path.join(tmpdir, ".adb_wizard_settings.json")
+                config.SETTINGS_FILE = os.path.join(tmpdir, ".adb_cli_py_settings.json")
                 with open(config.SETTINGS_FILE, "w", encoding="utf-8") as f:
                     f.write(
                         """{

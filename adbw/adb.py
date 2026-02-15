@@ -16,10 +16,10 @@ from .errors import AdbWizardError
 
 RUNTIME_DRY_RUN = False
 RUNTIME_DEBUG_LOGGING = False
-RUNTIME_DEBUG_LOG_FILE = "adb_wizard_debug.log"
+RUNTIME_DEBUG_LOG_FILE = "adb_cli_py_debug.log"
 RUNTIME_REDACT_EXPORTS = True
 RUNTIME_ACTION_TRANSCRIPT_ENABLED = False
-RUNTIME_ACTION_TRANSCRIPT_FILE = "adb_wizard_transcript.log"
+RUNTIME_ACTION_TRANSCRIPT_FILE = "adb_cli_py_transcript.log"
 RUNTIME_ADB_RETRY_COUNT = 3
 RUNTIME_COMMAND_TIMEOUT_SEC = 120
 
@@ -35,10 +35,10 @@ def set_runtime_options(settings: Settings) -> None:
     global RUNTIME_COMMAND_TIMEOUT_SEC
     RUNTIME_DRY_RUN = settings.dry_run
     RUNTIME_DEBUG_LOGGING = settings.debug_logging
-    RUNTIME_DEBUG_LOG_FILE = settings.debug_log_file or "adb_wizard_debug.log"
+    RUNTIME_DEBUG_LOG_FILE = settings.debug_log_file or "adb_cli_py_debug.log"
     RUNTIME_REDACT_EXPORTS = settings.redact_exports
     RUNTIME_ACTION_TRANSCRIPT_ENABLED = settings.action_transcript_enabled
-    RUNTIME_ACTION_TRANSCRIPT_FILE = settings.action_transcript_file or "adb_wizard_transcript.log"
+    RUNTIME_ACTION_TRANSCRIPT_FILE = settings.action_transcript_file or "adb_cli_py_transcript.log"
     RUNTIME_ADB_RETRY_COUNT = max(1, min(10, int(settings.adb_retry_count)))
     RUNTIME_COMMAND_TIMEOUT_SEC = max(5, min(3600, int(settings.command_timeout_sec)))
 
@@ -211,7 +211,7 @@ def platform_tools_url() -> str:
 
 def install_platform_tools() -> None:
     url = platform_tools_url()
-    tmp_dir = tempfile.mkdtemp(prefix="adb_wizard_")
+    tmp_dir = tempfile.mkdtemp(prefix="adb_cli_py_")
     archive_path = os.path.join(tmp_dir, f"{LOCAL_PLATFORM_TOOLS_DIR}.zip")
     local_install_path = os.path.join(os.getcwd(), LOCAL_PLATFORM_TOOLS_DIR)
 

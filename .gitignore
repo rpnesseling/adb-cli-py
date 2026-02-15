@@ -16,11 +16,11 @@ venv/
 Thumbs.db
 
 # Local app settings
-.adb_wizard_settings.json
-.adb_wizard_profiles.json
-.adb_wizard_workflows.json
-.adb_wizard_aliases.json
-adb_wizard_transcript.log
+.adb_cli_py_settings.json
+.adb_cli_py_profiles.json
+.adb_cli_py_workflows.json
+.adb_cli_py_aliases.json
+adb_cli_py_transcript.log
 
 # Downloaded Android platform-tools (project-local, not source)
 platform-tools/
