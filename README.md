@@ -9,7 +9,6 @@ Feature-rich interactive Python CLI for Android Debug Bridge (ADB) workflows acr
 - Supports device selection and switching when multiple devices are connected
 - Shows one-screen device summary (brand/model/Android/API/ABI/battery/IP)
 - Supports reboot actions (system, recovery, bootloader)
-- Supports Wi-Fi adb connect/disconnect workflows
 
 ### App and package
 - Installs APKs with `adb install -r`
@@ -17,29 +16,35 @@ Feature-rich interactive Python CLI for Android Debug Bridge (ADB) workflows acr
 - APK insight mode (reads metadata when `aapt` is available and warns on potential downgrade/signature issues)
 - Supports package utilities (list/info/launch/uninstall/force-stop/clear data)
 
-### File transfer
+### File transfer and capture
 - Transfers files with guided `adb push` and `adb pull` prompts
+- Screen capture tools (screenshot + screenrecord pull)
 
 ### Logging and diagnostics
 - Tails `logcat`, supports filtered tailing, and saves timestamped log snapshots
 - Collects diagnostics bundle (`logcat` + `bugreport`)
 - Exports device health report in JSON and TXT
 
-### Utilities and runtime
-- Runs arbitrary `adb shell` commands
-- Includes shell command history shortcuts (`!history`, `!<index>`)
+### Automation and extensibility
 - Workflow manager for scripted action chains (create/list/run)
 - Profile manager for app/package/log presets
 - App dev loop mode (install + clear data + launch + filtered logcat)
 - Multi-device broadcast actions (install APK or shell command across connected devices)
 - Plugin hooks from `plugins/*.py`
-- Port forward/reverse manager
-- Screen capture tools (screenshot + screenrecord pull)
+
+### Connectivity and developer tooling
+- Supports Wi-Fi adb connect/disconnect workflows
 - Wireless pairing (`adb pair`)
+- Port forward/reverse manager
+- Runs arbitrary `adb shell` commands
+- Includes shell command history shortcuts (`!history`, `!<index>`)
+
+### Configuration and runtime behavior
+- Interactive Settings menu with persisted local JSON config (`.adb_wizard_settings.json`)
 - Auto-installs project-local Android platform-tools in `./platform-tools` when `adb` is not found
 - Prints which `adb` binary is active (project-local or global `PATH`)
 - Runs startup preflight checks and retries transient adb failures
-- Optional dry-run mode and debug logging
+- Optional runtime controls such as dry-run mode, debug logging, remembered device, and APK signature check mode
 
 ## Requirements
 
