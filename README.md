@@ -1,92 +1,137 @@
 # adb-wizard
 
-Feature-rich interactive Python CLI for Android Debug Bridge (ADB) workflows across device/session management, app/package tasks, file transfer, diagnostics, and automation.
+A practical interactive CLI for everyday Android Debug Bridge (ADB) work.
 
-## Features
+`adb-wizard` helps you connect to devices, run common ADB actions quickly, and automate repeated tasks with workflows, profiles, and plugins.
+
+## What It Does
 
 ### Device and session
-- Detects connected Android devices with `adb devices -l`
-- Supports device selection and switching when multiple devices are connected
-- Shows one-screen device summary (brand/model/Android/API/ABI/battery/IP)
-- Supports reboot actions (system, recovery, bootloader)
-- Device snapshot and restore helpers (packages/props/settings)
+- Detect connected devices and choose target device
+- Remember last selected device (optional)
+- Show a one-screen device summary
+- Reboot to system, recovery, or bootloader
+- Connect/disconnect over Wi-Fi ADB
 
 ### App and package
-- Installs APKs with `adb install -r`
-- Installs split APK sets with `adb install-multiple -r`
-- APK insight mode (reads metadata when `aapt` is available and warns on potential downgrade/signature issues)
-- Supports package utilities (list/info/launch/uninstall/force-stop/clear data)
-- Permission manager for grant/revoke/list flows
-- Intent/deep-link runner for common `am` actions
-- Process/service inspector for app troubleshooting
+- Install APK (`install -r`)
+- Install split APK sets (`install-multiple -r`)
+- APK insight (package/version/minSdk/targetSdk when `aapt` is available)
+- List packages, inspect package details, launch app
+- Uninstall, force-stop, and clear app data
 
-### File transfer and capture
-- Transfers files with guided `adb push` and `adb pull` prompts
-- Screen capture tools (screenshot + screenrecord pull)
+### File transfer
+- Push local file/path to device
+- Pull from device to local path
 
 ### Logging and diagnostics
-- Tails `logcat`, supports filtered tailing, and saves timestamped log snapshots
-- Scheduled log capture with chunk rotation and gzip compression
-- Collects diagnostics bundle (`logcat` + `bugreport`)
-- Exports device health report in JSON and TXT
-- Network diagnostics pack export
+- Live `logcat`
+- Filtered `logcat`
+- Save `logcat` snapshot
+- Collect diagnostics bundle (`logcat` + `bugreport`)
+- Export health report (`.json` + `.txt`)
 
-### Automation and extensibility
-- Workflow manager for scripted action chains (create/list/run)
-- Profile manager for app/package/log presets
-- App dev loop mode (install + clear data + launch + filtered logcat)
-- Multi-device broadcast actions (install APK or shell command across connected devices)
-- Plugin hooks from `plugins/*.py`
+### Automation and power tools
+- Workflow manager (create/list/run step-based workflows)
+- Profile manager (store app/dev defaults)
+- App dev loop mode (install + clear + launch + filtered logcat)
+- Multi-device broadcast (install APK or run shell on all connected devices)
+- Plugin actions from `plugins/*.py`
 - Interactive package search with quick actions
 
-### Connectivity and developer tooling
-- Supports Wi-Fi adb connect/disconnect workflows
-- Wireless pairing (`adb pair`)
+### Advanced utilities
 - Port forward/reverse manager
+- Screen capture tools (screenshot/screenrecord)
+- Wireless pairing (`adb pair`)
+- Device snapshot/restore helpers
+- Permission manager (grant/revoke/list)
+- Intent/deep-link runner
+- Process/service inspector
+- Network diagnostics pack export
 - Device alias manager
-- Runs arbitrary `adb shell` commands
-- Includes shell command history shortcuts (`!history`, `!<index>`)
-
-### Configuration and runtime behavior
-- Interactive Settings menu with persisted local JSON config (`.adb_wizard_settings.json`)
-- Auto-installs project-local Android platform-tools in `./platform-tools` when `adb` is not found
-- Prints which `adb` binary is active (project-local or global `PATH`)
-- Runs startup preflight checks and additional prerequisite health checks
-- Optional runtime controls such as dry-run mode, debug logging, remembered device, APK signature check mode, redaction mode, transcript logging, retry count, and timeout
+- Prerequisite health check
 
 ## Requirements
 
 - Python 3.9+
-- Either:
-  - `adb` already available on your `PATH`, or
-  - internet access on first run so the tool can download project-local platform-tools to `./platform-tools`
-- Android device with:
-  - Developer Options enabled
-  - USB Debugging enabled
-  - USB debugging authorization accepted on-device
+- Android device with USB debugging enabled (and authorization accepted on-device)
+- `adb` available either:
+  - globally on `PATH`, or
+  - as project-local `./platform-tools/adb` (auto-installed if needed)
 
-## Quick Start
+## Install and Run
 
 ```powershell
 python adb_wizard.py
 ```
 
-If one device is connected, it is selected automatically.  
-If multiple devices are connected, choose one from the prompt.
+If `adb` is missing, the tool downloads Android platform-tools into `./platform-tools` for project-local use (not system-wide install).
 
-## JSON/API Mode
+## Main Menus
 
-For CI or scripting, run non-interactive mode:
+### Root menu
+1. `ADB menu`
+2. `Platform tools`
+3. `Settings`
+0. `Exit`
+
+### ADB menu groups
+1. `Device and session`
+2. `App and package`
+3. `File transfer`
+4. `Logging and diagnostics`
+5. `Utilities`
+6. `Advanced`
+0. `Exit`
+
+## Settings
+
+Runtime settings are stored in:
+- `.adb_wizard_settings.json`
+
+If the file does not exist, it is created when settings are saved.
+
+Example template:
+- `.adb_wizard_settings.example.json`
+
+Important options:
+- `prefer_project_local_platform_tools`: prefer `./platform-tools/adb` over global `adb`
+- `remember_last_device`
+- `apk_signature_check_mode`: `off` / `conservative` / `strict`
+- `dry_run`
+- `debug_logging`
+- `redact_exports`
+- `action_transcript_enabled`
+- `adb_retry_count`
+- `command_timeout_sec`
+
+## Local Data Files
+
+These are user-local runtime files and are ignored by git:
+- `.adb_wizard_settings.json`
+- `.adb_wizard_profiles.json`
+- `.adb_wizard_workflows.json`
+- `.adb_wizard_aliases.json`
+
+Example templates in repo:
+- `.adb_wizard_settings.example.json`
+- `.adb_wizard_profiles.example.json`
+- `.adb_wizard_workflows.example.json`
+- `.adb_wizard_aliases.example.json`
+
+## JSON/API Mode (Non-Interactive)
+
+Use `--json` with `--cmd` for scripting/CI.
 
 ```powershell
 python adb_wizard.py --json --cmd devices.list
 ```
 
-Optional arguments:
-- `--serial <device-serial>`: target a specific device
-- `--params <json-or-kv>`: command parameters as JSON (`{"key":"value"}`) or `key=value,key2=value2`
+Optional:
+- `--serial <device-serial>`
+- `--params <json-or-kv>`
 
-Supported `--cmd` values:
+Supported commands:
 - `system.info`
 - `devices.list`
 - `device.summary`
@@ -103,289 +148,107 @@ Examples:
 ```powershell
 python adb_wizard.py --json --cmd device.summary --serial ABC123
 python adb_wizard.py --json --cmd shell.run --serial ABC123 --params "command=getprop ro.build.version.release"
-python adb_wizard.py --json --cmd package.list --serial ABC123 --params "third_party=true"
-python adb_wizard.py --json --cmd apk.install --serial ABC123 --params "apk_path=C:/path/to/app.apk"
+python adb_wizard.py --json --cmd file.push --serial ABC123 --params "src=C:/tmp/a.txt,dst=/sdcard/a.txt"
 ```
 
-Settings file:
+## Workflows and Profiles
 
-`adb_wizard.py` reads `.adb_wizard_settings.json` from the project root and updates it from the Settings menu.
-If the file does not exist, it is created when a setting is toggled.
-
-```json
-{
-  "prefer_project_local_platform_tools": false,
-  "remember_last_device": true,
-  "last_device_serial": "",
-  "active_profile": "",
-  "apk_signature_check_mode": "conservative",
-  "dry_run": false,
-  "debug_logging": false,
-  "debug_log_file": "adb_wizard_debug.log",
-  "redact_exports": true,
-  "action_transcript_enabled": false,
-  "action_transcript_file": "adb_wizard_transcript.log",
-  "adb_retry_count": 3,
-  "command_timeout_sec": 120
-}
-```
-
-Settings:
-- `prefer_project_local_platform_tools`: Prefer `./platform-tools/adb` over global `adb` on `PATH` when both exist.
-- `remember_last_device`: Reuse last selected device automatically when multiple are connected.
-- `last_device_serial`: Stored serial used when `remember_last_device` is enabled.
-- `active_profile`: Profile name to prefill app dev loop defaults.
-- `apk_signature_check_mode`: APK insight signature warning mode (`off`, `conservative`, `strict`).
-- `dry_run`: Print commands without executing them.
-- `debug_logging`: Write command-level debug logs to file.
-- `debug_log_file`: Debug log output path.
-- `redact_exports`: Redact likely sensitive values in exports/transcripts.
-- `action_transcript_enabled`: Write command transcript to file.
-- `action_transcript_file`: Transcript output path.
-- `adb_retry_count`: Retry count for adb commands.
-- `command_timeout_sec`: Timeout for command execution.
-
-On startup, the tool prints which `adb` is being used (path + source label: project-local or global `PATH`).
-
-## Advanced Automation and Tooling
-
-### ADB Workflows
-
-Workflows let you define repeatable action chains and run them from:
-
-- `ADB menu` -> `Utilities` -> `Workflow manager`
-
-Workflow storage:
-- Runtime file: `.adb_wizard_workflows.json` (local, ignored by git)
-- Template: `.adb_wizard_workflows.example.json`
-
-Supported workflow step actions:
-- `install_apk` (requires `apk_path`)
-- `clear_data` (requires `package`)
-- `launch_app` (requires `package`, optional `activity`)
-- `tail_filtered_logcat` (optional `tag`, `priority`)
-
-Example workflow:
-
-```json
-[
-  {
-    "name": "sample-dev-loop",
-    "steps": [
-      { "action": "install_apk", "apk_path": "C:/path/to/app.apk" },
-      { "action": "clear_data", "package": "com.example.app" },
-      { "action": "launch_app", "package": "com.example.app", "activity": ".MainActivity" },
-      { "action": "tail_filtered_logcat", "tag": "ExampleTag", "priority": "I" }
-    ]
-  }
-]
-```
+### Workflows
+- File: `.adb_wizard_workflows.json`
+- Example: `.adb_wizard_workflows.example.json`
+- Supported step actions:
+  - `install_apk`
+  - `clear_data`
+  - `launch_app`
+  - `tail_filtered_logcat`
 
 ### Profiles
+- File: `.adb_wizard_profiles.json`
+- Example: `.adb_wizard_profiles.example.json`
+- Fields:
+  - `package_name`
+  - `activity`
+  - `log_tag`
+  - `apk_path`
 
-Profiles store reusable app/dev defaults and are managed from:
-- `ADB menu` -> `Utilities` -> `Profile manager`
+## Plugins
 
-Profile storage:
-- Runtime file: `.adb_wizard_profiles.json` (local, ignored by git)
-- Template: `.adb_wizard_profiles.example.json`
-
-Profile fields:
-- `package_name`
-- `activity`
-- `log_tag`
-- `apk_path`
-
-`active_profile` in `.adb_wizard_settings.json` pre-fills App Dev Loop defaults.
-
-### App Dev Loop Mode
-
-Run from:
-- `ADB menu` -> `Utilities` -> `App dev loop mode`
-
-Flow:
-1. Optional profile prefill (or active profile default)
-2. Install APK (if provided)
-3. Clear app data (if package provided)
-4. Launch app
-5. Start filtered logcat stream
-
-### Diagnostics Export
-
-In addition to log snapshots and bugreport bundles, the tool can export health reports from:
-- `ADB menu` -> `Logging and diagnostics` -> `Export health report (JSON + TXT)`
-
-Outputs:
-- `health_report_<serial>_<timestamp>.json`
-- `health_report_<serial>_<timestamp>.txt`
-
-### Multi-device Broadcast
-
-Run from:
-- `ADB menu` -> `Utilities` -> `Multi-device broadcast`
-
-Supported broadcast actions:
-- Install APK on all authorized connected devices
-- Run a shell command on all authorized connected devices
-
-### Wireless Pairing
-
-Run from:
-- `ADB menu` -> `Advanced` -> `Wireless pairing (adb pair)`
-
-Supports guided pairing and optional immediate `adb connect`.
-
-### Plugin Hooks
-
-Run from:
-- `ADB menu` -> `Utilities` -> `Plugin actions`
-
-Plugin location:
-- `plugins/*.py` (example: `plugins/example_plugin.py`)
+- Folder: `plugins/`
+- Example: `plugins/example_plugin.py`
 
 Plugin contract:
-- Export `register()` returning a list of action dictionaries.
-- Each action requires:
-  - `name`: display label
-  - `run`: callable invoked with `adb_path`, `serial`, `run`, and `adb_cmd`
+- Export a `register()` function
+- Return a list of action dictionaries
+- Each action should have:
+  - `name`: label shown in menu
+  - `run`: callable receiving `adb_path`, `serial`, `run`, `adb_cmd`
 
-## Menu Options
-
-Top-level menu:
-1. ADB menu
-2. Platform tools
-3. Settings
-0. Exit
-
-Platform tools:
-1. Re-download and reinstall project-local platform-tools (`./platform-tools`, not system-wide)
-0. Back
-
-Settings:
-1. Toggle `prefer_project_local_platform_tools`
-2. Toggle `remember_last_device`
-3. Toggle `dry_run`
-4. Toggle `debug_logging`
-5. Cycle `apk_signature_check_mode` (`off` -> `conservative` -> `strict`)
-6. Toggle `redact_exports`
-7. Toggle `action_transcript_enabled`
-8. Set `adb_retry_count`
-9. Set `command_timeout_sec`
-10. Clear remembered device
-0. Back
-
-ADB menu:
-1. Device and session  
-   Submenu: show summary, switch device, reboot, connect/disconnect Wi-Fi, snapshot/restore (with confirmations on state-changing actions)
-2. App and package  
-   Submenu: install APK, install split APKs, APK insight, list/info/launch package, uninstall/force-stop/clear data, permission manager, intent/deep-link runner, process/service inspector
-3. File transfer  
-   Submenu: push/pull files
-4. Logging and diagnostics  
-   Submenu: tail logcat, save snapshot, filtered tail, collect bundle (`logcat` + `bugreport`, with confirmation), health report export, network diagnostics pack
-5. Utilities  
-   Submenu: shell command, workflow manager, profile manager, app dev loop mode, plugin actions, multi-device broadcast, interactive package search, scheduled log capture
-6. Advanced  
-   Submenu: port forward/reverse manager, screen capture tools, wireless pairing, aliases, prerequisite health check
-0. Exit
-
-## Example Session
-
-```text
-ADB Wizard
-Device: R58M123456A [device]
-1) Device and session
-2) App and package
-3) File transfer
-4) Logging and diagnostics
-5) Utilities
-6) Advanced
-...
-0) Exit
-> 1
-```
-
-## Troubleshooting
-
-- `adb not found`
-  - Install Android platform-tools system-wide, or place `adb` in `./platform-tools/` for project-local use (not system-wide)
-- `No devices found`
-  - Check cable/USB mode, enable USB debugging, run `adb devices`
-- `Device is unauthorized`
-  - Unlock the phone and accept the USB debugging prompt
-- `Command failed ...`
-  - Enable `debug_logging` in Settings and inspect `adb_wizard_debug.log`
-- `Interrupted. Exiting.`
-  - Printed when `Ctrl+C` is used to exit the app
-
-## Project Structure
-
-- `adb_wizard.py`: thin entrypoint.
-- `adbw/app.py`: app orchestration and root menu flow.
-- `adbw/config.py`: settings schema and settings file read/write.
-- `adbw/adb.py`: adb discovery/install, command execution, retries, dry-run/debug runtime behavior.
-- `adbw/devices.py`: device listing/selection and device summary/preflight helpers.
-- `adbw/actions.py`: task-specific adb actions (install, packages, logs, Wi-Fi, diagnostics).
-- `adbw/advanced.py`: workflows, profiles, dev loop, diagnostics export, pairing, broadcast, plugins.
-- `adbw/menus.py`: interactive submenus and user prompts.
-- `adbw/ui_strings.py`: centralized menu/UI text constants.
-- `adbw/errors.py`: app-specific exception type.
-- `plugins/example_plugin.py`: minimal plugin action example.
-
-## Testing
-
-Run the lightweight unit test scaffold:
-
-```powershell
-python -m unittest discover -s tests -p "test_*.py"
-```
+Plugin load/registration/action errors are reported and do not terminate the app.
 
 ## Build Binaries
 
-Build locally with PyInstaller:
+### Local build
 
-- Windows:
+Windows:
 
 ```powershell
 .\scripts\build.ps1
 ```
 
-- Linux/macOS:
+Linux/macOS:
 
 ```bash
 ./scripts/build.sh
 ```
 
-Output binaries:
+Output:
 - Windows: `dist/adb-wizard.exe`
 - Linux/macOS: `dist/adb-wizard`
 
-Automated multi-OS builds are configured in `.github/workflows/build.yml`:
-- Builds on `windows-latest`, `ubuntu-latest`, and `macos-latest`
-- Uploads build artifacts for each OS
-- On tags like `v1.0.0`, creates a GitHub Release and attaches all artifacts
+### GitHub Actions
 
-## Releases
+Workflow file: `.github/workflows/build.yml`
 
-Expected release assets:
+- Push to `main` and pull requests run build + tests
+- Tag pushes matching `v*` also create a GitHub Release
+
+## Release Assets
+
+GitHub Releases include:
 - `adb-wizard-windows.exe`
 - `adb-wizard-linux`
 - `adb-wizard-macos`
 - `SHA256SUMS.txt`
 
-## Contributing
+## Project Layout
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes and test locally
-4. Open a pull request with a clear description
+- `adb_wizard.py`: CLI entrypoint
+- `adbw/app.py`: app startup and root flow
+- `adbw/menus.py`: interactive menus
+- `adbw/adb.py`: command execution, retries, adb discovery/install
+- `adbw/devices.py`: device discovery/selection/summary
+- `adbw/actions.py`: core ADB actions
+- `adbw/advanced.py`: workflows/profiles/plugins and advanced tools
+- `adbw/api.py`: JSON/API mode
+- `adbw/config.py`: settings model and persistence
 
-For bug reports, include:
-- OS version
-- Python version
-- `adb version` output
-- Steps to reproduce
+## Testing
+
+```powershell
+python -m unittest discover -s tests -p "test_*.py"
+```
+
+## Troubleshooting
+
+- `No devices found`
+  - Check USB cable/mode, enable USB debugging, authorize host
+- `Device is unauthorized`
+  - Unlock device and accept USB debugging prompt
+- `adb not found`
+  - Let adb-wizard auto-install project-local `platform-tools`, or install adb globally
+- Command errors
+  - Enable debug logging in Settings and inspect `adb_wizard_debug.log`
 
 ## License
 
-This project is licensed under the MIT License. See `LICENSE` for details.
+MIT. See `LICENSE`.
