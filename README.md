@@ -89,7 +89,9 @@ Settings:
 
 On startup, the tool prints which `adb` is being used (path + source label: project-local or global `PATH`).
 
-## ADB Workflows
+## Advanced Automation and Tooling
+
+### ADB Workflows
 
 Workflows let you define repeatable action chains and run them from:
 
@@ -120,6 +122,74 @@ Example workflow:
   }
 ]
 ```
+
+### Profiles
+
+Profiles store reusable app/dev defaults and are managed from:
+- `ADB menu` -> `Utilities` -> `Profile manager`
+
+Profile storage:
+- Runtime file: `.adb_wizard_profiles.json` (local, ignored by git)
+- Template: `.adb_wizard_profiles.example.json`
+
+Profile fields:
+- `package_name`
+- `activity`
+- `log_tag`
+- `apk_path`
+
+`active_profile` in `.adb_wizard_settings.json` pre-fills App Dev Loop defaults.
+
+### App Dev Loop Mode
+
+Run from:
+- `ADB menu` -> `Utilities` -> `App dev loop mode`
+
+Flow:
+1. Optional profile prefill (or active profile default)
+2. Install APK (if provided)
+3. Clear app data (if package provided)
+4. Launch app
+5. Start filtered logcat stream
+
+### Diagnostics Export
+
+In addition to log snapshots and bugreport bundles, the tool can export health reports from:
+- `ADB menu` -> `Logging and diagnostics` -> `Export health report (JSON + TXT)`
+
+Outputs:
+- `health_report_<serial>_<timestamp>.json`
+- `health_report_<serial>_<timestamp>.txt`
+
+### Multi-device Broadcast
+
+Run from:
+- `ADB menu` -> `Utilities` -> `Multi-device broadcast`
+
+Supported broadcast actions:
+- Install APK on all authorized connected devices
+- Run a shell command on all authorized connected devices
+
+### Wireless Pairing
+
+Run from:
+- `ADB menu` -> `Advanced` -> `Wireless pairing (adb pair)`
+
+Supports guided pairing and optional immediate `adb connect`.
+
+### Plugin Hooks
+
+Run from:
+- `ADB menu` -> `Utilities` -> `Plugin actions`
+
+Plugin location:
+- `plugins/*.py` (example: `plugins/example_plugin.py`)
+
+Plugin contract:
+- Export `register()` returning a list of action dictionaries.
+- Each action requires:
+  - `name`: display label
+  - `run`: callable invoked with `adb_path`, `serial`, `run`, and `adb_cmd`
 
 ## Menu Options
 
