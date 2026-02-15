@@ -1,0 +1,25 @@
+[
+  {
+    "name": "sample-dev-loop",
+    "steps": [
+      {
+        "action": "install_apk",
+        "apk_path": "C:/path/to/app.apk"
+      },
+      {
+        "action": "clear_data",
+        "package": "com.example.app"
+      },
+      {
+        "action": "launch_app",
+        "package": "com.example.app",
+        "activity": ".MainActivity"
+      },
+      {
+        "action": "tail_filtered_logcat",
+        "tag": "ExampleTag",
+        "priority": "I"
+      }
+    ]
+  }
+]

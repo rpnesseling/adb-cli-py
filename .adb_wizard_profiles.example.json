@@ -1,0 +1,8 @@
+{
+  "sample-profile": {
+    "package_name": "com.example.app",
+    "activity": ".MainActivity",
+    "log_tag": "ExampleTag",
+    "apk_path": "C:/path/to/app.apk"
+  }
+}
