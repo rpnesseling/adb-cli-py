@@ -192,6 +192,8 @@ def show_basic_menu(adb_path: str, device: Device) -> None:
         print("2) Install APK")
         print("3) Run shell command")
         print("4) Tail logcat (Ctrl+C to stop)")
+        print("5) Push file to device")
+        print("6) Pull file from device")
         print("0) Exit")
         choice = input("> ").strip()
 
@@ -217,6 +219,30 @@ def show_basic_menu(adb_path: str, device: Device) -> None:
                 subprocess.run(adb_cmd(adb_path, serial, "logcat"))
             except KeyboardInterrupt:
                 pass
+        elif choice == "5":
+            src = input("Local source path: ").strip().strip('"')
+            if not src:
+                print("Source path is required.")
+                continue
+            if not os.path.exists(src):
+                print(f"Local source path does not exist: {src}")
+                continue
+            dst = input("Device destination path: ").strip().strip('"')
+            if not dst:
+                print("Destination path is required.")
+                continue
+            run(adb_cmd(adb_path, serial, "push", src, dst))
+            print("Push complete.")
+        elif choice == "6":
+            src = input("Device source path: ").strip().strip('"')
+            if not src:
+                print("Source path is required.")
+                continue
+            dst = input("Local destination path (default: current directory): ").strip().strip('"')
+            if not dst:
+                dst = "."
+            run(adb_cmd(adb_path, serial, "pull", src, dst))
+            print("Pull complete.")
         else:
             print("Unknown option.")
 

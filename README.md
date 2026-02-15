@@ -8,6 +8,7 @@ Simple interactive Python CLI for common Android Debug Bridge (ADB) tasks.
 - Lets you choose a device when multiple are connected
 - Shows basic device properties (brand, model, Android version)
 - Installs APKs with `adb install -r`
+- Transfers files with guided `adb push` and `adb pull` prompts
 - Runs arbitrary `adb shell` commands
 - Tails `logcat` output
 - Auto-installs project-local Android platform-tools in `./platform-tools` when `adb` is not found
@@ -77,6 +78,10 @@ ADB menu:
    Prompts for a shell command and prints stdout/stderr
 4. Tail logcat  
    Streams logs until `Ctrl+C`
+5. Push file to device  
+   Prompts for local source path and device destination path, then runs `adb push`
+6. Pull file from device  
+   Prompts for device source path and local destination path, then runs `adb pull`
 0. Exit
 
 ## Example Session
@@ -88,6 +93,8 @@ Device: R58M123456A [device]
 2) Install APK
 3) Run shell command
 4) Tail logcat (Ctrl+C to stop)
+5) Push file to device
+6) Pull file from device
 0) Exit
 > 1
 ```
