@@ -29,6 +29,7 @@ class TestSettingsRoundTrip(unittest.TestCase):
                     prefer_project_local_platform_tools=True,
                     remember_last_device=False,
                     last_device_serial="ABC123",
+                    apk_signature_check_mode="strict",
                     dry_run=True,
                     debug_logging=True,
                     debug_log_file="custom.log",
@@ -40,7 +41,24 @@ class TestSettingsRoundTrip(unittest.TestCase):
 
         self.assertEqual(actual, expected)
 
+    def test_invalid_signature_mode_falls_back_to_conservative(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_settings_file = config.SETTINGS_FILE
+            try:
+                config.SETTINGS_FILE = os.path.join(tmpdir, ".adb_wizard_settings.json")
+                with open(config.SETTINGS_FILE, "w", encoding="utf-8") as f:
+                    f.write(
+                        """{
+  "apk_signature_check_mode": "not-a-valid-mode"
+}
+"""
+                    )
+                actual = load_settings()
+            finally:
+                config.SETTINGS_FILE = old_settings_file
+
+        self.assertEqual(actual.apk_signature_check_mode, "conservative")
+
 
 if __name__ == "__main__":
     unittest.main()
-

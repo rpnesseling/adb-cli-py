@@ -359,6 +359,9 @@ def multi_device_broadcast(adb_path: str) -> None:
         if not apk:
             print("APK path is required.")
             return
+        if not os.path.exists(apk):
+            print(f"APK path does not exist: {apk}")
+            return
         for d in devices:
             print(f"[{d.serial}] installing...")
             run(adb_cmd(adb_path, d.serial, "install", "-r", apk), check=False)
@@ -405,7 +408,11 @@ def run_plugins(adb_path: str, serial: str) -> None:
     actions: List[Dict[str, Any]] = []
     for filename in plugin_files:
         path = os.path.join(PLUGINS_DIR, filename)
-        module = _load_plugin(path)
+        try:
+            module = _load_plugin(path)
+        except Exception as e:
+            print(f"Failed loading plugin {filename}: {e}")
+            continue
         if module is None:
             continue
         register: Optional[Callable[[], List[Dict[str, Any]]]] = getattr(module, "register", None)
@@ -416,7 +423,7 @@ def run_plugins(adb_path: str, serial: str) -> None:
                 if callable(action.get("run")) and action.get("name"):
                     actions.append(action)
         except Exception as e:
-            print(f"Failed loading plugin {filename}: {e}")
+            print(f"Failed registering actions in plugin {filename}: {e}")
 
     if not actions:
         print("No valid plugin actions found.")
@@ -436,7 +443,7 @@ def run_plugins(adb_path: str, serial: str) -> None:
         print(f"Plugin action failed: {e}")
 
 
-def apk_insight(adb_path: str, serial: str) -> None:
+def apk_insight(adb_path: str, serial: str, signature_check_mode: str = "conservative") -> None:
     apk = input("APK path: ").strip().strip('"')
     if not apk:
         print("APK path is required.")
@@ -483,13 +490,22 @@ def apk_insight(adb_path: str, serial: str) -> None:
     if package_name and version_code.isdigit():
         details = run(adb_cmd(adb_path, serial, "shell", "dumpsys", "package", package_name), check=False).stdout
         installed_code = ""
+        has_signing_details = False
         for line in details.splitlines():
             line = line.strip()
             if line.startswith("versionCode="):
                 installed_code = line.split("=", 1)[1].split()[0].strip()
-                break
+            if "signatures:" in line.lower() or "signing" in line.lower():
+                has_signing_details = True
         if installed_code.isdigit():
             if int(version_code) < int(installed_code):
                 print("Warning: APK versionCode is lower than installed version (potential downgrade).")
-        if "signatures match" not in details.lower() and "signatures" in details.lower():
-            print("Warning: Installed package signature may differ; install may fail.")
+        mode = (signature_check_mode or "conservative").lower()
+        if mode == "strict" and has_signing_details:
+            print("Warning: Strict mode enabled; signature mismatch cannot be verified reliably from dumpsys output.")
+        elif mode == "conservative" and has_signing_details:
+            # Conservative mode only warns when explicit mismatch wording appears.
+            text = details.lower()
+            mismatch_signals = ("signature mismatch", "inconsistent certificates", "does not match")
+            if any(s in text for s in mismatch_signals):
+                print("Warning: Installed package signature may differ; install may fail.")

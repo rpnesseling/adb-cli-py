@@ -3,6 +3,7 @@
   "remember_last_device": true,
   "last_device_serial": "",
   "active_profile": "",
+  "apk_signature_check_mode": "conservative",
   "dry_run": false,
   "debug_logging": false,
   "debug_log_file": "adb_wizard_debug.log"

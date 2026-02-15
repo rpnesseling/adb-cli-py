@@ -72,6 +72,7 @@ If the file does not exist, it is created when a setting is toggled.
   "remember_last_device": true,
   "last_device_serial": "",
   "active_profile": "",
+  "apk_signature_check_mode": "conservative",
   "dry_run": false,
   "debug_logging": false,
   "debug_log_file": "adb_wizard_debug.log"
@@ -83,6 +84,7 @@ Settings:
 - `remember_last_device`: Reuse last selected device automatically when multiple are connected.
 - `last_device_serial`: Stored serial used when `remember_last_device` is enabled.
 - `active_profile`: Profile name to prefill app dev loop defaults.
+- `apk_signature_check_mode`: APK insight signature warning mode (`off`, `conservative`, `strict`).
 - `dry_run`: Print commands without executing them.
 - `debug_logging`: Write command-level debug logs to file.
 - `debug_log_file`: Debug log output path.
@@ -208,7 +210,8 @@ Settings:
 2. Toggle `remember_last_device`
 3. Toggle `dry_run`
 4. Toggle `debug_logging`
-5. Clear remembered device
+5. Cycle `apk_signature_check_mode` (`off` -> `conservative` -> `strict`)
+6. Clear remembered device
 0. Back
 
 ADB menu:

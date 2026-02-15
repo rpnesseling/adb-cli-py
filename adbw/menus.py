@@ -193,7 +193,7 @@ def _show_device_session_menu(adb_path: str, device: Device, settings: Settings)
         print("Unknown option.")
 
 
-def _show_app_package_menu(adb_path: str, device: Device) -> None:
+def _show_app_package_menu(adb_path: str, device: Device, settings: Settings) -> None:
     while True:
         print("\nApp and package")
         print(f"Device: {device.serial} [{device.state}]")
@@ -209,7 +209,7 @@ def _show_app_package_menu(adb_path: str, device: Device) -> None:
             install_split_apks(adb_path, device.serial)
             continue
         if choice == "3":
-            apk_insight(adb_path, device.serial)
+            apk_insight(adb_path, device.serial, signature_check_mode=settings.apk_signature_check_mode)
             continue
         if choice == "4":
             list_packages(adb_path, device.serial)
@@ -422,7 +422,7 @@ def show_basic_menu(adb_path: str, device: Device, settings: Settings) -> Device
             device = _show_device_session_menu(adb_path, device, settings)
             continue
         if choice == "2":
-            _show_app_package_menu(adb_path, device)
+            _show_app_package_menu(adb_path, device, settings)
             continue
         if choice == "3":
             _show_file_transfer_menu(adb_path, device)
@@ -461,11 +461,13 @@ def show_settings_menu(settings: Settings) -> bool:
         remember = "ON" if settings.remember_last_device else "OFF"
         dry_run = "ON" if settings.dry_run else "OFF"
         debug_log = "ON" if settings.debug_logging else "OFF"
+        signature_mode = settings.apk_signature_check_mode
         print(f"1) Prefer project-local platform-tools (currently: {local_pref})")
         print(f"2) Remember last selected device (currently: {remember})")
         print(f"3) Dry run mode (currently: {dry_run})")
         print(f"4) Debug logging to file (currently: {debug_log})")
-        print(f"5) Clear remembered device (currently: {settings.last_device_serial or 'none'})")
+        print(f"5) APK signature check mode (currently: {signature_mode})")
+        print(f"6) Clear remembered device (currently: {settings.last_device_serial or 'none'})")
         print("0) Back")
         choice = input("> ").strip()
 
@@ -498,6 +500,14 @@ def show_settings_menu(settings: Settings) -> bool:
             print(f"Saved {SETTINGS_FILE}: debug_logging={current}")
             return True
         if choice == "5":
+            modes = ["off", "conservative", "strict"]
+            current = settings.apk_signature_check_mode if settings.apk_signature_check_mode in modes else "conservative"
+            next_mode = modes[(modes.index(current) + 1) % len(modes)]
+            settings.apk_signature_check_mode = next_mode
+            save_settings(settings)
+            print(f"Saved {SETTINGS_FILE}: apk_signature_check_mode={next_mode}")
+            return True
+        if choice == "6":
             settings.last_device_serial = ""
             save_settings(settings)
             print(f"Saved {SETTINGS_FILE}: last_device_serial cleared.")
