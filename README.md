@@ -183,6 +183,14 @@ Automated multi-OS builds are configured in `.github/workflows/build.yml`:
 - Uploads build artifacts for each OS
 - On tags like `v1.0.0`, creates a GitHub Release and attaches all artifacts
 
+## Releases
+
+Expected release assets:
+- `adb-wizard-windows.exe`
+- `adb-wizard-linux`
+- `adb-wizard-macos`
+- `SHA256SUMS.txt`
+
 ## Contributing
 
 1. Fork the repository
