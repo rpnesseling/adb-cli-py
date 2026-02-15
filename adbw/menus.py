@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Dict, List, Optional
+from typing import List
 
 from .actions import (
     collect_bugreport_bundle,
@@ -15,7 +15,15 @@ from .actions import (
 from .adb import adb_cmd, ensure_adb, run, run_streaming
 from .config import SETTINGS_FILE, Settings, save_settings
 from .devices import Device, list_devices, pick_device, show_device_summary
-from .ui_strings import ADB_MENU_LINES, PLATFORM_TOOLS_MENU_LINES
+from .ui_strings import (
+    ADB_MENU_LINES,
+    APP_PACKAGE_MENU_LINES,
+    DEVICE_SESSION_MENU_LINES,
+    FILE_TRANSFER_MENU_LINES,
+    LOGGING_MENU_LINES,
+    PLATFORM_TOOLS_MENU_LINES,
+    UTILITIES_MENU_LINES,
+)
 
 
 def confirm(prompt: str) -> bool:
@@ -126,116 +134,164 @@ def _handle_reboot_menu(adb_path: str, serial: str) -> None:
         print("Unknown option.")
 
 
+def _show_device_session_menu(adb_path: str, device: Device, settings: Settings) -> Device:
+    while True:
+        print("\nDevice and session")
+        print(f"Device: {device.serial} [{device.state}]")
+        _print_menu(DEVICE_SESSION_MENU_LINES)
+        choice = input("> ").strip()
+
+        if choice == "0":
+            return device
+        if choice == "1":
+            show_device_summary(adb_path, device.serial)
+            continue
+        if choice == "2":
+            devices = list_devices(adb_path)
+            new_device = pick_device(devices)
+            if new_device.state == "unauthorized":
+                print("Selected device is unauthorized. Unlock and accept USB debugging, then retry.")
+                continue
+            device = new_device
+            if settings.remember_last_device:
+                settings.last_device_serial = device.serial
+                save_settings(settings)
+            print(f"Switched to {device.serial}.")
+            continue
+        if choice == "3":
+            _handle_reboot_menu(adb_path, device.serial)
+            continue
+        if choice == "4":
+            if not confirm("Connect this device over Wi-Fi now?"):
+                continue
+            connect_over_wifi(adb_path, device.serial)
+            continue
+        if choice == "5":
+            if not confirm("Disconnect Wi-Fi adb endpoint(s) now?"):
+                continue
+            disconnect_wifi(adb_path)
+            continue
+        print("Unknown option.")
+
+
+def _show_app_package_menu(adb_path: str, device: Device) -> None:
+    while True:
+        print("\nApp and package")
+        print(f"Device: {device.serial} [{device.state}]")
+        _print_menu(APP_PACKAGE_MENU_LINES)
+        choice = input("> ").strip()
+
+        if choice == "0":
+            return
+        if choice == "1":
+            _handle_install_apk(adb_path, device.serial)
+            continue
+        if choice == "2":
+            install_split_apks(adb_path, device.serial)
+            continue
+        if choice == "3":
+            list_packages(adb_path, device.serial)
+            continue
+        if choice == "4":
+            show_package_info(adb_path, device.serial)
+            continue
+        if choice == "5":
+            launch_app(adb_path, device.serial)
+            continue
+        if choice == "6":
+            _handle_package_action(
+                adb_path,
+                device.serial,
+                "Package name to uninstall: ",
+                ["Uninstall {package}?", "uninstall"],
+                "Uninstall command sent.",
+            )
+            continue
+        if choice == "7":
+            _handle_package_action(
+                adb_path,
+                device.serial,
+                "Package name to force-stop: ",
+                ["Force-stop {package}?", "shell", "am", "force-stop"],
+                "Force-stop command sent.",
+            )
+            continue
+        if choice == "8":
+            _handle_package_action(
+                adb_path,
+                device.serial,
+                "Package name to clear app data: ",
+                ["Clear app data for {package}?", "shell", "pm", "clear"],
+                "Clear data command sent.",
+            )
+            continue
+        print("Unknown option.")
+
+
+def _show_file_transfer_menu(adb_path: str, device: Device) -> None:
+    while True:
+        print("\nFile transfer")
+        print(f"Device: {device.serial} [{device.state}]")
+        _print_menu(FILE_TRANSFER_MENU_LINES)
+        choice = input("> ").strip()
+
+        if choice == "0":
+            return
+        if choice == "1":
+            _handle_push(adb_path, device.serial)
+            continue
+        if choice == "2":
+            _handle_pull(adb_path, device.serial)
+            continue
+        print("Unknown option.")
+
+
+def _show_logging_menu(adb_path: str, device: Device) -> None:
+    while True:
+        print("\nLogging and diagnostics")
+        print(f"Device: {device.serial} [{device.state}]")
+        _print_menu(LOGGING_MENU_LINES)
+        choice = input("> ").strip()
+
+        if choice == "0":
+            return
+        if choice == "1":
+            try:
+                run_streaming(adb_cmd(adb_path, device.serial, "logcat"))
+            except KeyboardInterrupt:
+                print()
+            continue
+        if choice == "2":
+            save_logcat_snapshot(adb_path, device.serial)
+            continue
+        if choice == "3":
+            tail_filtered_logcat(adb_path, device.serial)
+            continue
+        if choice == "4":
+            if not confirm("Collect diagnostics bundle now? This may take a while."):
+                continue
+            collect_bugreport_bundle(adb_path, device.serial)
+            continue
+        print("Unknown option.")
+
+
+def _show_utilities_menu(adb_path: str, device: Device, shell_history: List[str]) -> None:
+    while True:
+        print("\nUtilities")
+        print(f"Device: {device.serial} [{device.state}]")
+        _print_menu(UTILITIES_MENU_LINES)
+        choice = input("> ").strip()
+
+        if choice == "0":
+            return
+        if choice == "1":
+            _handle_shell_command(adb_path, device.serial, shell_history)
+            continue
+        print("Unknown option.")
+
+
 def show_basic_menu(adb_path: str, device: Device, settings: Settings) -> Device:
     shell_history: List[str] = []
-
-    def refresh_device(new_device: Device) -> Device:
-        if settings.remember_last_device:
-            settings.last_device_serial = new_device.serial
-            save_settings(settings)
-        return new_device
-
-    def switch_device() -> Optional[Device]:
-        devices = list_devices(adb_path)
-        new_device = pick_device(devices)
-        if new_device.state == "unauthorized":
-            print("Selected device is unauthorized. Unlock and accept USB debugging, then retry.")
-            return None
-        return refresh_device(new_device)
-
-    def action_show_summary() -> Optional[Device]:
-        show_device_summary(adb_path, device.serial)
-        return None
-
-    def action_install_apk() -> Optional[Device]:
-        _handle_install_apk(adb_path, device.serial)
-        return None
-
-    def action_install_split() -> Optional[Device]:
-        install_split_apks(adb_path, device.serial)
-        return None
-
-    def action_shell() -> Optional[Device]:
-        _handle_shell_command(adb_path, device.serial, shell_history)
-        return None
-
-    def action_logcat() -> Optional[Device]:
-        run_streaming(adb_cmd(adb_path, device.serial, "logcat"))
-        return None
-
-    def action_save_logcat() -> Optional[Device]:
-        save_logcat_snapshot(adb_path, device.serial)
-        return None
-
-    def action_filter_logcat() -> Optional[Device]:
-        tail_filtered_logcat(adb_path, device.serial)
-        return None
-
-    def action_push() -> Optional[Device]:
-        _handle_push(adb_path, device.serial)
-        return None
-
-    def action_pull() -> Optional[Device]:
-        _handle_pull(adb_path, device.serial)
-        return None
-
-    def action_list_packages() -> Optional[Device]:
-        list_packages(adb_path, device.serial)
-        return None
-
-    def action_show_package_info() -> Optional[Device]:
-        show_package_info(adb_path, device.serial)
-        return None
-
-    def action_launch_app() -> Optional[Device]:
-        launch_app(adb_path, device.serial)
-        return None
-
-    def action_uninstall() -> Optional[Device]:
-        _handle_package_action(
-            adb_path,
-            device.serial,
-            "Package name to uninstall: ",
-            ["Uninstall {package}?", "uninstall"],
-            "Uninstall command sent.",
-        )
-        return None
-
-    def action_force_stop() -> Optional[Device]:
-        _handle_package_action(
-            adb_path,
-            device.serial,
-            "Package name to force-stop: ",
-            ["Force-stop {package}?", "shell", "am", "force-stop"],
-            "Force-stop command sent.",
-        )
-        return None
-
-    def action_clear_data() -> Optional[Device]:
-        _handle_package_action(
-            adb_path,
-            device.serial,
-            "Package name to clear app data: ",
-            ["Clear app data for {package}?", "shell", "pm", "clear"],
-            "Clear data command sent.",
-        )
-        return None
-
-    def action_reboot_menu() -> Optional[Device]:
-        _handle_reboot_menu(adb_path, device.serial)
-        return None
-
-    def action_connect_wifi() -> Optional[Device]:
-        connect_over_wifi(adb_path, device.serial)
-        return None
-
-    def action_disconnect_wifi() -> Optional[Device]:
-        disconnect_wifi(adb_path)
-        return None
-
-    def action_collect_bundle() -> Optional[Device]:
-        collect_bugreport_bundle(adb_path, device.serial)
-        return None
 
     while True:
         print("\nADB Wizard")
@@ -245,42 +301,22 @@ def show_basic_menu(adb_path: str, device: Device, settings: Settings) -> Device
 
         if choice == "0":
             return device
-
-        handlers: Dict[str, Callable[[], Optional[Device]]] = {
-            "1": action_show_summary,
-            "2": action_install_apk,
-            "3": action_install_split,
-            "4": action_shell,
-            "5": action_logcat,
-            "6": action_save_logcat,
-            "7": action_filter_logcat,
-            "8": action_push,
-            "9": action_pull,
-            "10": action_list_packages,
-            "11": action_show_package_info,
-            "12": action_launch_app,
-            "13": action_uninstall,
-            "14": action_force_stop,
-            "15": action_clear_data,
-            "16": action_reboot_menu,
-            "17": action_connect_wifi,
-            "18": action_disconnect_wifi,
-            "19": action_collect_bundle,
-            "20": switch_device,
-        }
-
-        handler = handlers.get(choice)
-        if handler is None:
-            print("Unknown option.")
+        if choice == "1":
+            device = _show_device_session_menu(adb_path, device, settings)
             continue
-        try:
-            result = handler()
-        except KeyboardInterrupt:
-            print()
+        if choice == "2":
+            _show_app_package_menu(adb_path, device)
             continue
-        if isinstance(result, Device):
-            device = result
-            print(f"Switched to {device.serial}.")
+        if choice == "3":
+            _show_file_transfer_menu(adb_path, device)
+            continue
+        if choice == "4":
+            _show_logging_menu(adb_path, device)
+            continue
+        if choice == "5":
+            _show_utilities_menu(adb_path, device, shell_history)
+            continue
+        print("Unknown option.")
 
 
 def show_platform_tools_menu(prefer_project_local: bool) -> bool:
@@ -347,3 +383,4 @@ def show_settings_menu(settings: Settings) -> bool:
             print(f"Saved {SETTINGS_FILE}: last_device_serial cleared.")
             return True
         print("Unknown option.")
+

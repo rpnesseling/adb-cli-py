@@ -88,34 +88,16 @@ Settings:
 0. Back
 
 ADB menu:
-1. Show device summary
-2. Install APK  
-   Prompts for a local APK path and installs with replace (`-r`)
-3. Install split APKs  
-   Prompts for comma-separated APK paths and installs via `install-multiple -r`
-4. Run shell command  
-   Supports history via `!history` and replay via `!<index>`
-5. Tail logcat  
-   Streams logs until `Ctrl+C`
-6. Save logcat snapshot  
-   Writes `logcat -d` output to a timestamped local file
-7. Tail filtered logcat  
-   Uses tag/priority filter
-8. Push file to device  
-   Prompts for local source path and device destination path, then runs `adb push`
-9. Pull file from device  
-   Prompts for device source path and local destination path, then runs `adb pull`
-10. List packages  
-11. Show package info  
-12. Launch app  
-13. Uninstall package (with confirmation)  
-14. Force-stop app (with confirmation)  
-15. Clear app data (with confirmation)  
-16. Reboot device (system/recovery/bootloader)  
-17. Connect over Wi-Fi (`tcpip` + `connect`)  
-18. Disconnect Wi-Fi device (`disconnect`)  
-19. Collect diagnostics bundle (`logcat` + `bugreport`)  
-20. Switch device  
+1. Device and session  
+   Submenu: show summary, switch device, reboot, connect/disconnect Wi-Fi (with confirmations for connect/disconnect)
+2. App and package  
+   Submenu: install APK, install split APKs, list/info/launch package, uninstall/force-stop/clear data (with confirmations for destructive actions)
+3. File transfer  
+   Submenu: push/pull files
+4. Logging and diagnostics  
+   Submenu: tail logcat, save snapshot, filtered tail, collect bundle (`logcat` + `bugreport`, with confirmation)
+5. Utilities  
+   Submenu: run shell command (supports `!history` and `!<index>`)
 0. Exit
 
 ## Example Session
@@ -123,16 +105,11 @@ ADB menu:
 ```text
 ADB Wizard
 Device: R58M123456A [device]
-1) Show device summary
-2) Install APK
-3) Install split APKs
-4) Run shell command (!history, !<index>)
-5) Tail logcat (Ctrl+C to stop)
-6) Save logcat snapshot
-7) Tail filtered logcat
-8) Push file to device
-9) Pull file from device
-10) List packages
+1) Device and session
+2) App and package
+3) File transfer
+4) Logging and diagnostics
+5) Utilities
 ...
 0) Exit
 > 1

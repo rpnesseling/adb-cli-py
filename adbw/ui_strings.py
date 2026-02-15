@@ -1,25 +1,50 @@
 ADB_MENU_LINES = [
-    "1) Show device summary",
-    "2) Install APK",
-    "3) Install split APKs",
-    "4) Run shell command (!history, !<index>)",
-    "5) Tail logcat (Ctrl+C to stop)",
-    "6) Save logcat snapshot",
-    "7) Tail filtered logcat",
-    "8) Push file to device",
-    "9) Pull file from device",
-    "10) List packages",
-    "11) Show package info",
-    "12) Launch app",
-    "13) Uninstall package",
-    "14) Force-stop app",
-    "15) Clear app data",
-    "16) Reboot device",
-    "17) Connect over Wi-Fi (tcpip/connect)",
-    "18) Disconnect Wi-Fi device",
-    "19) Collect logcat + bugreport bundle",
-    "20) Switch device",
+    "1) Device and session",
+    "2) App and package",
+    "3) File transfer",
+    "4) Logging and diagnostics",
+    "5) Utilities",
     "0) Exit",
+]
+
+DEVICE_SESSION_MENU_LINES = [
+    "1) Show device summary",
+    "2) Switch device",
+    "3) Reboot device",
+    "4) Connect over Wi-Fi (tcpip/connect)",
+    "5) Disconnect Wi-Fi device",
+    "0) Back",
+]
+
+APP_PACKAGE_MENU_LINES = [
+    "1) Install APK",
+    "2) Install split APKs",
+    "3) List packages",
+    "4) Show package info",
+    "5) Launch app",
+    "6) Uninstall package",
+    "7) Force-stop app",
+    "8) Clear app data",
+    "0) Back",
+]
+
+FILE_TRANSFER_MENU_LINES = [
+    "1) Push file to device",
+    "2) Pull file from device",
+    "0) Back",
+]
+
+LOGGING_MENU_LINES = [
+    "1) Tail logcat (Ctrl+C to stop)",
+    "2) Save logcat snapshot",
+    "3) Tail filtered logcat",
+    "4) Collect logcat + bugreport bundle",
+    "0) Back",
+]
+
+UTILITIES_MENU_LINES = [
+    "1) Run shell command (!history, !<index>)",
+    "0) Back",
 ]
 
 PLATFORM_TOOLS_MENU_LINES = [
