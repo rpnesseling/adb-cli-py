@@ -148,6 +148,31 @@ Run the lightweight unit test scaffold:
 python -m unittest discover -s tests -p "test_*.py"
 ```
 
+## Build Binaries
+
+Build locally with PyInstaller:
+
+- Windows:
+
+```powershell
+.\scripts\build.ps1
+```
+
+- Linux/macOS:
+
+```bash
+./scripts/build.sh
+```
+
+Output binaries:
+- Windows: `dist/adb-wizard.exe`
+- Linux/macOS: `dist/adb-wizard`
+
+Automated multi-OS builds are configured in `.github/workflows/build.yml`:
+- Builds on `windows-latest`, `ubuntu-latest`, and `macos-latest`
+- Uploads build artifacts for each OS
+- On tags like `v1.0.0`, creates a GitHub Release and attaches all artifacts
+
 ## Contributing
 
 1. Fork the repository
